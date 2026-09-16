@@ -24,12 +24,24 @@ export const api = {
   /**
    * Send a GET request to the backend.
    */
-  async get(url) {
-    const res = await fetch(url, {
-      method: 'GET',
-      headers: getAuthHeaders()
-    });
-    return handleResponse(res);
+  async get(url, timeoutMs = 15000) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: getAuthHeaders(),
+        signal: controller.signal
+      });
+      return await handleResponse(res);
+    } catch (err) {
+      if (err.name === 'AbortError') {
+        throw new Error(`Request timed out for ${url}`);
+      }
+      throw err;
+    } finally {
+      clearTimeout(timer);
+    }
   },
 
   /**

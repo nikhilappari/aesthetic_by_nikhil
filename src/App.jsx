@@ -11,79 +11,149 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Footer from './components/Footer';
 import SocialButtons from './components/SocialButtons';
 import { api } from './utils/api';
+import { artworks as defaultArtworks } from './data/artworks';
+
+const defaultTransformation = {
+  before: '',
+  after: '',
+  title: 'The Transformation',
+  subtitle: 'See how we turn your favorite memories into hand-drawn masterpieces.'
+};
+
+const defaultPricing = {
+  charcoalA4: '1500',
+  charcoalA3: '2500',
+  charcoalCouple: '3500',
+  graphiteA4: '1500',
+  graphiteA3: '2500',
+  graphiteCouple: '3500',
+  colorA4: '2200',
+  colorA3: '3200',
+  colorCouple: '4500',
+  frameA4Normal: '300',
+  frameA4Premium: '500',
+  frameA3Normal: '500',
+  frameA3Premium: '700',
+  cloudinaryCloudName: '',
+  cloudinaryUploadPreset: ''
+};
 
 function App() {
-  const [artworks, setArtworks] = useState([]);
-  const [transformation, setTransformation] = useState({
-    before: '',
-    after: '',
-    title: 'The Transformation',
-    subtitle: 'See how we turn your favorite memories into hand-drawn masterpieces.'
+  const [artworks, setArtworks] = useState(() => {
+    try {
+      const cached = localStorage.getItem('cached_artworks');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.warn("Failed to load cached artworks", e);
+    }
+    return defaultArtworks;
   });
-  const [pricing, setPricing] = useState({
-    charcoalA4: '1500',
-    charcoalA3: '2500',
-    charcoalCouple: '3500',
-    graphiteA4: '1500',
-    graphiteA3: '2500',
-    graphiteCouple: '3500',
-    colorA4: '2200',
-    colorA3: '3200',
-    colorCouple: '4500',
-    frameA4Normal: '300',
-    frameA4Premium: '500',
-    frameA3Normal: '500',
-    frameA3Premium: '700',
-    cloudinaryCloudName: '',
-    cloudinaryUploadPreset: ''
-  });
-  const [currentUser, setCurrentUser] = useState(null);
-  const [clientRequests, setClientRequests] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
 
-  // Initialize and load data from backend
+  const [transformation, setTransformation] = useState(() => {
+    try {
+      const cached = localStorage.getItem('cached_transformation');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && parsed.title) return parsed;
+      }
+    } catch (e) {
+      console.warn("Failed to load cached transformation", e);
+    }
+    return defaultTransformation;
+  });
+
+  const [pricing, setPricing] = useState(() => {
+    try {
+      const cached = localStorage.getItem('cached_pricing');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && parsed.charcoalA4) return { ...defaultPricing, ...parsed };
+      }
+    } catch (e) {
+      console.warn("Failed to load cached pricing", e);
+    }
+    return defaultPricing;
+  });
+
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const cached = localStorage.getItem('cached_user');
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const [clientRequests, setClientRequests] = useState([]);
+
+  // Load and refresh data from backend in background without blocking UI
   useEffect(() => {
     const loadAppData = async () => {
       try {
-        // 1. Check if token exists to resume session
+        // 1. Refresh active session in background if token exists
         const token = localStorage.getItem('token');
-        let activeUser = null;
+        let activeUser = currentUser;
         if (token) {
           try {
             const data = await api.get('/api/auth/me');
-            setCurrentUser(data.user);
-            activeUser = data.user;
+            if (data?.user) {
+              setCurrentUser(data.user);
+              activeUser = data.user;
+              localStorage.setItem('cached_user', JSON.stringify(data.user));
+            }
           } catch (err) {
-            console.error("Token verification failed, logging out:", err);
-            localStorage.removeItem('token');
-            setCurrentUser(null);
+            console.warn("Token check failed:", err.message);
+            if (err.message && (err.message.includes('401') || err.message.includes('403'))) {
+              localStorage.removeItem('token');
+              localStorage.removeItem('cached_user');
+              setCurrentUser(null);
+            }
           }
         }
 
-        // 2. Fetch artworks, transformation settings, and pricing settings
-        const [loadedArtworks, loadedTransformation, loadedPricing] = await Promise.all([
+        // 2. Fetch fresh artworks, transformation settings, and pricing settings in parallel
+        const results = await Promise.allSettled([
           api.get('/api/artworks'),
           api.get('/api/transformation'),
           api.get('/api/pricing')
         ]);
 
-        setArtworks(loadedArtworks);
-        if (loadedTransformation && loadedTransformation.before) {
-          setTransformation(loadedTransformation);
-        }
-        if (loadedPricing) {
-          setPricing(prev => ({ ...prev, ...loadedPricing }));
+        const [artworksRes, transRes, pricingRes] = results;
+
+        if (artworksRes.status === 'fulfilled' && Array.isArray(artworksRes.value) && artworksRes.value.length > 0) {
+          setArtworks(artworksRes.value);
+          localStorage.setItem('cached_artworks', JSON.stringify(artworksRes.value));
         }
 
-        // 3. Fetch user orders if logged in
+        if (transRes.status === 'fulfilled' && transRes.value?.before) {
+          setTransformation(transRes.value);
+          localStorage.setItem('cached_transformation', JSON.stringify(transRes.value));
+        }
+
+        if (pricingRes.status === 'fulfilled' && pricingRes.value) {
+          setPricing(prev => {
+            const updated = { ...prev, ...pricingRes.value };
+            localStorage.setItem('cached_pricing', JSON.stringify(updated));
+            return updated;
+          });
+        }
+
+        // 3. Fetch user orders in background if logged in
         if (activeUser) {
-          const loadedRequests = await api.get('/api/requests');
-          setClientRequests(loadedRequests);
+          try {
+            const loadedRequests = await api.get('/api/requests');
+            if (Array.isArray(loadedRequests)) {
+              setClientRequests(loadedRequests);
+            }
+          } catch (e) {
+            console.warn("Failed to load user orders:", e.message);
+          }
         }
       } catch (error) {
-        console.error("Failed to load backend data:", error);
-      } finally {
-        setIsLoading(false);
+        console.warn("Background data sync error:", error);
       }
     };
 
@@ -219,6 +289,7 @@ function App() {
     try {
       const data = await api.post('/api/auth/login', { username, password });
       localStorage.setItem('token', data.token);
+      localStorage.setItem('cached_user', JSON.stringify(data.user));
       setCurrentUser(data.user);
       return data.user;
     } catch (e) {
@@ -231,7 +302,10 @@ function App() {
     try {
       const data = await api.post('/api/auth/signup', { username, password });
       localStorage.setItem('token', data.token);
-      setCurrentUser(data.user);
+      if (data.user) {
+        localStorage.setItem('cached_user', JSON.stringify(data.user));
+        setCurrentUser(data.user);
+      }
       return { success: true };
     } catch (e) {
       return { success: false, message: e.message };
@@ -242,6 +316,7 @@ function App() {
     try {
       const data = await api.loginWithGoogle(credential);
       localStorage.setItem('token', data.token);
+      localStorage.setItem('cached_user', JSON.stringify(data.user));
       setCurrentUser(data.user);
       return data.user;
     } catch (e) {
@@ -252,21 +327,10 @@ function App() {
 
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('cached_user');
     setCurrentUser(null);
     setClientRequests([]);
   };
-
-  if (isLoading) {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw', alignItems: 'center', justifyContent: 'center', background: '#0a0a0a', color: '#d7b46a', fontFamily: "'Tenor Sans', sans-serif" }}>
-        <div style={{ width: '40px', height: '40px', border: '3px solid rgba(215, 180, 106, 0.15)', borderTopColor: '#d7b46a', borderRadius: '50%', animation: 'spin 1s linear infinite', marginBottom: '1.5rem' }}></div>
-        <span style={{ letterSpacing: '2px', textTransform: 'uppercase', fontSize: '0.9rem' }}>Studio Nikhil Loading...</span>
-        <style>{`
-          @keyframes spin { to { transform: rotate(360deg); } }
-        `}</style>
-      </div>
-    );
-  }
 
   return (
     <Router>
