@@ -21,6 +21,13 @@ const Navbar = ({ user, logout }) => {
     }
   };
 
+  const handleGalleryClick = (e) => {
+    if (window.location.pathname === '/') {
+      e.preventDefault();
+      document.getElementById('gallery')?.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   const handleAboutClick = (e) => {
     if (window.location.pathname === '/') {
       e.preventDefault();
@@ -63,6 +70,7 @@ const Navbar = ({ user, logout }) => {
 
         <ul className={`nav-links ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
           <li><Link to="/" onClick={(e) => { handleHomeClick(e); closeMobileMenu(); }}>Home</Link></li>
+          <li><Link to="/gallery" onClick={(e) => { handleGalleryClick(e); closeMobileMenu(); }}>Gallery</Link></li>
           <li><Link to="/artworks" onClick={closeMobileMenu}>Artworks</Link></li>
           <li><Link to="/#about" onClick={(e) => { handleAboutClick(e); closeMobileMenu(); }}>About</Link></li>
           
