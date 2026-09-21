@@ -1,7 +1,9 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import './ArtworkDetail.css';
 
 const ArtworkDetail = ({ artwork, onClose }) => {
+  const navigate = useNavigate();
   if (!artwork) return null;
 
   return (
@@ -32,7 +34,8 @@ const ArtworkDetail = ({ artwork, onClose }) => {
             <div className="detail-footer">
               <button className="btn-primary" onClick={() => {
                 onClose();
-                window.location.href = '#contact';
+                navigate('/order');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
               }}>Request Similar Sketch</button>
             </div>
           </div>
