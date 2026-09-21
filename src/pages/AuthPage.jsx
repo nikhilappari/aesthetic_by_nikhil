@@ -14,7 +14,8 @@ const AuthPage = ({ login, signup, loginWithGoogle }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Google Auth Client ID State
-  const [googleClientId, setGoogleClientId] = useState('');
+  const defaultClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '655065657609-4p51158vudfvmdq2vki69vurkoqj457q.apps.googleusercontent.com';
+  const [googleClientId, setGoogleClientId] = useState(defaultClientId);
   const [isGoogleScriptLoaded, setIsGoogleScriptLoaded] = useState(false);
   const googleBtnContainerRef = useRef(null);
 
@@ -25,54 +26,65 @@ const AuthPage = ({ login, signup, loginWithGoogle }) => {
   // Fetch Google Client ID and initialize Google script
   useEffect(() => {
     const fetchClientIdAndSetup = async () => {
+      let activeClientId = googleClientId;
       try {
-        const { clientId } = await api.getGoogleClientId();
-        if (clientId) {
-          setGoogleClientId(clientId);
-          
-          // Check if Google GSI client is already loaded, otherwise load it dynamically
-          if (window.google) {
-            setIsGoogleScriptLoaded(true);
-          } else {
-            const script = document.createElement('script');
-            script.src = 'https://accounts.google.com/gsi/client';
-            script.async = true;
-            script.defer = true;
-            script.onload = () => setIsGoogleScriptLoaded(true);
-            document.body.appendChild(script);
+        if (!activeClientId) {
+          const res = await api.getGoogleClientId();
+          if (res?.clientId) {
+            activeClientId = res.clientId;
+            setGoogleClientId(activeClientId);
           }
         }
       } catch (err) {
-        console.error("Failed to fetch Google Client ID from backend:", err);
+        console.warn("Could not fetch Google Client ID from backend, using fallback:", err);
+      }
+
+      if (activeClientId) {
+        // Check if Google GSI client is already loaded, otherwise check periodically
+        if (window.google?.accounts?.id) {
+          setIsGoogleScriptLoaded(true);
+        } else {
+          const checkInterval = setInterval(() => {
+            if (window.google?.accounts?.id) {
+              setIsGoogleScriptLoaded(true);
+              clearInterval(checkInterval);
+            }
+          }, 100);
+
+          setTimeout(() => clearInterval(checkInterval), 4000);
+        }
       }
     };
     fetchClientIdAndSetup();
-  }, []);
+  }, [googleClientId]);
 
   // Initialize and render Google Sign-In Button on both tabs
   useEffect(() => {
     if (isGoogleScriptLoaded && googleClientId && googleBtnContainerRef.current) {
       try {
         /* global google */
-        google.accounts.id.initialize({
-          client_id: googleClientId,
-          callback: handleGoogleCredentialResponse,
-          auto_select: false,
-          cancel_on_tap_outside: true
-        });
+        if (window.google?.accounts?.id) {
+          googleBtnContainerRef.current.innerHTML = '';
+          google.accounts.id.initialize({
+            client_id: googleClientId,
+            callback: handleGoogleCredentialResponse,
+            auto_select: false,
+            cancel_on_tap_outside: true
+          });
 
-        google.accounts.id.renderButton(
-          googleBtnContainerRef.current,
-          {
-            type: 'standard',
-            theme: 'filled_dark',
-            size: 'large',
-            text: 'continue_with', // Render "Continue with Google"
-            shape: 'rectangular',
-            logo_alignment: 'left',
-            width: googleBtnContainerRef.current.offsetWidth || 354
-          }
-        );
+          google.accounts.id.renderButton(
+            googleBtnContainerRef.current,
+            {
+              type: 'standard',
+              theme: 'filled_dark',
+              size: 'large',
+              text: 'continue_with', // Render "Continue with Google"
+              shape: 'rectangular',
+              logo_alignment: 'left',
+              width: googleBtnContainerRef.current.offsetWidth || 354
+            }
+          );
+        }
       } catch (err) {
         console.error("Google Sign-In button render failed:", err);
       }

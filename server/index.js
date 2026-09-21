@@ -189,7 +189,7 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
 
 // Google Auth Client ID endpoint
 app.get('/api/auth/google/client-id', (req, res) => {
-  return res.json({ clientId: process.env.GOOGLE_CLIENT_ID || '' });
+  return res.json({ clientId: process.env.GOOGLE_CLIENT_ID || '655065657609-4p51158vudfvmdq2vki69vurkoqj457q.apps.googleusercontent.com' });
 });
 
 // Google Sign-In verification endpoint
@@ -199,7 +199,7 @@ app.post('/api/auth/google', async (req, res) => {
     return res.status(400).json({ message: 'Google credential token is required.' });
   }
 
-  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientId = process.env.GOOGLE_CLIENT_ID || '655065657609-4p51158vudfvmdq2vki69vurkoqj457q.apps.googleusercontent.com';
   if (!clientId) {
     return res.status(500).json({ message: 'Google Authentication is not configured on this server.' });
   }
