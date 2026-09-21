@@ -39,7 +39,7 @@ const About = () => {
             <div className="about-cta-container">
               <p className="cta-text">Start your commission today</p>
               <div className="about-actions">
-                <a href="https://wa.me/919849117467" target="_blank" rel="noopener noreferrer" className="btn-whatsapp">
+                <a href="https://wa.me/919849117467?text=Hi%20Nikhil!%20I%20saw%20your%20sketches%20on%20Aesthetic%20by%20Nikhil%20and%20would%20like%20to%20commission%20a%20portrait." target="_blank" rel="noopener noreferrer" className="btn-whatsapp">
                   <span>WhatsApp</span>
                   <i className="wa-icon"></i>
                 </a>

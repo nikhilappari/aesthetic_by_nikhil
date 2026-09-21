@@ -38,7 +38,7 @@ const Footer = () => {
             <div className="social-links">
               <a href="#" className="social-icon">IG</a>
               <a href="#" className="social-icon">FB</a>
-              <a href="https://wa.me/919849117467" target="_blank" rel="noopener noreferrer" className="social-icon">WA</a>
+              <a href="https://wa.me/919849117467?text=Hi%20Nikhil!%20I%20saw%20your%20sketches%20on%20Aesthetic%20by%20Nikhil%20and%20would%20like%20to%20commission%20a%20portrait." target="_blank" rel="noopener noreferrer" className="social-icon">WA</a>
             </div>
           </div>
         </div>
