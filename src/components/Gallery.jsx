@@ -214,7 +214,6 @@ const Gallery = ({ artworks }) => {
                         <div className="hover-content">
                           <span className="hover-category">{art.type} • {art.category}</span>
                           <h3 className="hover-title serif">{art.title}</h3>
-                          <span className="hover-price">Starting ₹{art.price}</span>
                           <button className="btn-inspect-mini">Inspect</button>
                         </div>
                       </div>

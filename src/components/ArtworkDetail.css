@@ -105,13 +105,11 @@
   margin-top: auto;
   display: flex;
   align-items: center;
-  justify-content: space-between;
 }
 
-.price-tag {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--accent-gold);
+.detail-footer .btn-primary {
+  width: 100%;
+  text-align: center;
 }
 
 @media (max-width: 768px) {

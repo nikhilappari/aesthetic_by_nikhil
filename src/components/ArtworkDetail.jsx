@@ -30,7 +30,6 @@ const ArtworkDetail = ({ artwork, onClose }) => {
             </div>
 
             <div className="detail-footer">
-              <div className="price-tag">Starting at ₹{artwork.price}</div>
               <button className="btn-primary" onClick={() => {
                 onClose();
                 window.location.href = '#contact';
