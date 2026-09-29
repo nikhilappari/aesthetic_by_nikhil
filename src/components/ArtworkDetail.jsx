@@ -1,11 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import ImageMagnifier from './ImageMagnifier';
-import CertificateModal from './CertificateModal';
 import './ArtworkDetail.css';
 
 const ArtworkDetail = ({ artwork, onClose, enableMagnifier = false }) => {
-  const [showCert, setShowCert] = useState(false);
   const navigate = useNavigate();
   if (!artwork) return null;
 
@@ -44,25 +42,10 @@ const ArtworkDetail = ({ artwork, onClose, enableMagnifier = false }) => {
                 navigate('/order');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}>Request Similar Sketch</button>
-
-              <button 
-                type="button" 
-                className="btn-cert-preview"
-                onClick={() => setShowCert(true)}
-              >
-                <span>📜 View Certificate of Authenticity</span>
-              </button>
             </div>
           </div>
         </div>
       </div>
-
-      {showCert && (
-        <CertificateModal 
-          artwork={artwork} 
-          onClose={() => setShowCert(false)} 
-        />
-      )}
     </div>
   );
 };

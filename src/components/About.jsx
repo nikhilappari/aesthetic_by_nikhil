@@ -1,18 +1,7 @@
-import React, { useState } from 'react';
-import CertificateModal from './CertificateModal';
+import React from 'react';
 import './About.css';
 
 const About = () => {
-  const [showCert, setShowCert] = useState(false);
-  const sampleArtwork = {
-    title: 'Masterwork Portrait Study',
-    type: 'Charcoal',
-    category: 'Realistic Portraiture',
-    image: '/artist_workspace.png',
-    id: 777,
-    size: 'A3 Archival Format'
-  };
-
   return (
     <section className="about-section section-padding" id="about">
       <div className="container">
@@ -46,15 +35,6 @@ const About = () => {
               artwork is crafted with the soul of the subject in mind, creating a timeless 
               masterpiece for you to cherish forever.
             </p>
-
-            <div className="about-cert-pledge" onClick={() => setShowCert(true)}>
-              <span className="pledge-icon">📜</span>
-              <div className="pledge-info">
-                <strong>Hand-Signed Certificate of Authenticity Included</strong>
-                <span>Archival 300 GSM cotton paper • UV sealed • 100+ years guaranteed</span>
-              </div>
-              <button type="button" className="pledge-btn">Preview ↗</button>
-            </div>
             
             <div className="about-cta-container">
               <p className="cta-text">Start your commission today</p>
@@ -71,13 +51,6 @@ const About = () => {
           </div>
         </div>
       </div>
-
-      {showCert && (
-        <CertificateModal 
-          artwork={sampleArtwork} 
-          onClose={() => setShowCert(false)} 
-        />
-      )}
     </section>
   );
 };

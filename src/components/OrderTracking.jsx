@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import CertificateModal from './CertificateModal';
 import './OrderTracking.css';
 
 const OrderTracking = ({ request, updateRequest, user }) => {
-  const [showCert, setShowCert] = useState(false);
   if (!request) return null;
 
   const { id, status, price, type, date, adminNote, customerApproval } = request;
@@ -154,16 +152,6 @@ const OrderTracking = ({ request, updateRequest, user }) => {
           <p className="value text-gold">₹{price || 'Calculating...'}</p>
         </div>
       </div>
-
-      <div className="order-cert-banner">
-        <button 
-          type="button" 
-          className="btn-order-certificate"
-          onClick={() => setShowCert(true)}
-        >
-          <span>📜 View Official Certificate of Authenticity</span>
-        </button>
-      </div>
       
       <div className="status-flow">
         {stages.map((stage, index) => {
@@ -231,13 +219,6 @@ const OrderTracking = ({ request, updateRequest, user }) => {
           </form>
         </div>
       </div>
-
-      {showCert && (
-        <CertificateModal 
-          request={request} 
-          onClose={() => setShowCert(false)} 
-        />
-      )}
     </div>
   );
 };
