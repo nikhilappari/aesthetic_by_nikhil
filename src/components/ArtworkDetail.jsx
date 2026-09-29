@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import ImageMagnifier from './ImageMagnifier';
 import './ArtworkDetail.css';
 
-const ArtworkDetail = ({ artwork, onClose }) => {
+const ArtworkDetail = ({ artwork, onClose, enableMagnifier = false }) => {
   const navigate = useNavigate();
   if (!artwork) return null;
 
@@ -13,7 +13,11 @@ const ArtworkDetail = ({ artwork, onClose }) => {
         <button className="close-btn" onClick={onClose}>&times;</button>
         <div className="detail-grid">
           <div className="detail-image">
-            <ImageMagnifier src={artwork.image} alt={artwork.title} />
+            {enableMagnifier ? (
+              <ImageMagnifier src={artwork.image} alt={artwork.title} />
+            ) : (
+              <img src={artwork.image} alt={artwork.title} />
+            )}
           </div>
           <div className="detail-info">
             <div className="badge">{artwork.type}</div>

@@ -48,6 +48,7 @@ const ArtworksGrid = ({ artworks }) => {
         <ArtworkDetail 
           artwork={selectedArtwork} 
           onClose={() => setSelectedArtwork(null)} 
+          enableMagnifier={true}
         />
       </div>
     </section>

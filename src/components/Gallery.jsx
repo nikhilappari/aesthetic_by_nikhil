@@ -233,6 +233,7 @@ const Gallery = ({ artworks }) => {
         <ArtworkDetail 
           artwork={selectedArtwork} 
           onClose={() => setSelectedArtwork(null)} 
+          enableMagnifier={false}
         />
       </div>
     </section>
