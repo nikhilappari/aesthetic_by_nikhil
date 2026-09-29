@@ -10,6 +10,7 @@ const ImageMagnifier = ({
 }) => {
   const [isEnabled, setIsEnabled] = useState(true);
   const [isHovered, setIsHovered] = useState(false);
+  const [isOverControls, setIsOverControls] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(defaultZoom);
   const [lensStyle, setLensStyle] = useState({});
   const [hasInteracted, setHasInteracted] = useState(false);
@@ -17,11 +18,17 @@ const ImageMagnifier = ({
   const containerRef = useRef(null);
 
   const updatePosition = (clientX, clientY, isTouch = false) => {
-    if (!isEnabled || !containerRef.current) return;
+    if (!isEnabled || !containerRef.current || isOverControls) return;
 
     const rect = containerRef.current.getBoundingClientRect();
     const x = clientX - rect.left;
     const y = clientY - rect.top;
+
+    // Automatically hide lens when cursor approaches the bottom toolbar area
+    if (y > rect.height - 75) {
+      setIsHovered(false);
+      return;
+    }
 
     // Boundary check
     if (x < 0 || x > rect.width || y < 0 || y > rect.height) {
@@ -56,17 +63,21 @@ const ImageMagnifier = ({
   };
 
   const handleMouseMove = (e) => {
+    if (isOverControls) {
+      setIsHovered(false);
+      return;
+    }
     updatePosition(e.clientX, e.clientY, false);
   };
 
   const handleTouchMove = (e) => {
-    if (e.touches && e.touches[0]) {
+    if (e.touches && e.touches[0] && !isOverControls) {
       updatePosition(e.touches[0].clientX, e.touches[0].clientY, true);
     }
   };
 
   const handleTouchStart = (e) => {
-    if (e.touches && e.touches[0]) {
+    if (e.touches && e.touches[0] && !isOverControls) {
       updatePosition(e.touches[0].clientX, e.touches[0].clientY, true);
     }
   };
@@ -74,9 +85,9 @@ const ImageMagnifier = ({
   return (
     <div
       ref={containerRef}
-      className={`image-magnifier-wrapper ${className}`}
+      className={`image-magnifier-wrapper ${isEnabled ? 'cursor-loupe' : 'cursor-default'} ${className}`}
       onMouseMove={handleMouseMove}
-      onMouseEnter={() => isEnabled && setIsHovered(true)}
+      onMouseEnter={() => isEnabled && !isOverControls && setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
@@ -84,60 +95,74 @@ const ImageMagnifier = ({
     >
       <img src={src} alt={alt} className="magnifier-source-img" />
 
-      {/* Floating Toolbar with controls */}
-      <div className="magnifier-toolbar">
+      {/* Floating Toolbar docked at bottom with full visibility */}
+      <div 
+        className="magnifier-toolbar"
+        onMouseEnter={() => {
+          setIsOverControls(true);
+          setIsHovered(false);
+        }}
+        onMouseLeave={() => setIsOverControls(false)}
+      >
         <div 
           className="magnifier-hint-badge"
-          style={{ opacity: hasInteracted && isHovered ? 0.35 : 1 }}
+          style={{ opacity: isEnabled ? (hasInteracted && isHovered ? 0.35 : 1) : 0.6 }}
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
             <circle cx="11" cy="11" r="8"></circle>
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
           </svg>
-          <span>Pencil Texture Loupe</span>
+          <span>{isEnabled ? 'Hover to inspect pencil strokes' : 'Loupe is OFF'}</span>
         </div>
 
         <div className="magnifier-controls" onClick={(e) => e.stopPropagation()}>
+          {isEnabled && (
+            <div className="magnifier-zoom-group">
+              <button
+                type="button"
+                className={`magnifier-zoom-btn ${zoomLevel === 2 ? 'active' : ''}`}
+                onClick={() => setZoomLevel(2)}
+                title="2x Zoom"
+              >
+                2x
+              </button>
+              <button
+                type="button"
+                className={`magnifier-zoom-btn ${zoomLevel === 2.5 ? 'active' : ''}`}
+                onClick={() => setZoomLevel(2.5)}
+                title="2.5x Zoom"
+              >
+                2.5x
+              </button>
+              <button
+                type="button"
+                className={`magnifier-zoom-btn ${zoomLevel === 3.5 ? 'active' : ''}`}
+                onClick={() => setZoomLevel(3.5)}
+                title="3.5x Zoom"
+              >
+                3.5x
+              </button>
+            </div>
+          )}
+
           <button
             type="button"
-            className={`magnifier-zoom-btn ${zoomLevel === 2 ? 'active' : ''}`}
-            onClick={() => { setZoomLevel(2); setIsEnabled(true); }}
-            title="2x Zoom"
-          >
-            2x
-          </button>
-          <button
-            type="button"
-            className={`magnifier-zoom-btn ${zoomLevel === 2.5 ? 'active' : ''}`}
-            onClick={() => { setZoomLevel(2.5); setIsEnabled(true); }}
-            title="2.5x Zoom"
-          >
-            2.5x
-          </button>
-          <button
-            type="button"
-            className={`magnifier-zoom-btn ${zoomLevel === 3.5 ? 'active' : ''}`}
-            onClick={() => { setZoomLevel(3.5); setIsEnabled(true); }}
-            title="3.5x Zoom"
-          >
-            3.5x
-          </button>
-          <button
-            type="button"
-            className={`magnifier-toggle-btn ${isEnabled ? 'active' : ''}`}
+            className={`magnifier-toggle-btn ${isEnabled ? 'active' : 'inactive'}`}
             onClick={() => {
-              setIsEnabled(!isEnabled);
-              if (isEnabled) setIsHovered(false);
+              const nextState = !isEnabled;
+              setIsEnabled(nextState);
+              setIsHovered(false);
             }}
-            title={isEnabled ? "Disable Loupe" : "Enable Loupe"}
+            title={isEnabled ? "Turn Off Magnifier" : "Turn On Magnifier"}
           >
-            {isEnabled ? 'ON' : 'OFF'}
+            <span className="toggle-dot"></span>
+            <span>{isEnabled ? 'LOUPE: ON' : 'LOUPE: OFF'}</span>
           </button>
         </div>
       </div>
 
-      {/* The Magnifying Glass Lens */}
-      {isEnabled && isHovered && (
+      {/* The Magnifying Glass Lens - completely hidden when hovering over controls */}
+      {isEnabled && isHovered && !isOverControls && (
         <div className="magnifier-lens" style={lensStyle}>
           <div className="magnifier-reticle" />
         </div>

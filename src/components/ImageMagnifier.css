@@ -3,12 +3,19 @@
   width: 100%;
   height: 100%;
   overflow: hidden;
-  cursor: crosshair;
   user-select: none;
   background: #0d0d0f;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.image-magnifier-wrapper.cursor-loupe {
+  cursor: crosshair;
+}
+
+.image-magnifier-wrapper.cursor-default {
+  cursor: default;
 }
 
 .magnifier-source-img {
@@ -19,34 +26,34 @@
   transition: filter 0.3s ease;
 }
 
-/* Floating Toolbar */
+/* Floating Toolbar Docked at Bottom */
 .magnifier-toolbar {
   position: absolute;
-  top: 1rem;
-  left: 1rem;
-  right: 1rem;
+  bottom: 1.2rem;
+  left: 1.2rem;
+  right: 1.2rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
   pointer-events: none;
-  z-index: 20;
+  z-index: 100; /* Always above magnifier lens */
 }
 
 .magnifier-hint-badge {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  background: rgba(10, 10, 12, 0.75);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(212, 175, 55, 0.35);
-  padding: 0.35rem 0.85rem;
+  background: rgba(10, 10, 14, 0.88);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(212, 175, 55, 0.45);
+  padding: 0.4rem 0.95rem;
   border-radius: 20px;
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   letter-spacing: 0.5px;
   color: var(--accent-gold);
   font-weight: 500;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+  transition: opacity 0.3s ease;
 }
 
 .magnifier-hint-badge svg {
@@ -62,43 +69,30 @@
   pointer-events: auto;
   display: flex;
   align-items: center;
-  gap: 0.3rem;
-  background: rgba(10, 10, 12, 0.85);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 0.25rem 0.4rem;
-  border-radius: 20px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+  gap: 0.4rem;
+  background: rgba(10, 10, 14, 0.95);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  padding: 0.3rem 0.45rem;
+  border-radius: 25px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.75);
 }
 
-.magnifier-toggle-btn {
-  background: transparent;
-  border: none;
-  color: var(--text-secondary);
-  font-size: 0.7rem;
-  font-weight: 600;
-  padding: 0.25rem 0.6rem;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.magnifier-toggle-btn:hover {
-  color: #fff;
-}
-
-.magnifier-toggle-btn.active {
-  background: var(--accent-gold);
-  color: #0b0b0d;
+.magnifier-zoom-group {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding-right: 0.4rem;
+  border-right: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 .magnifier-zoom-btn {
   background: transparent;
   border: 1px solid transparent;
   color: var(--text-secondary);
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   font-weight: 600;
-  padding: 0.2rem 0.5rem;
+  padding: 0.25rem 0.55rem;
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -106,13 +100,64 @@
 
 .magnifier-zoom-btn:hover {
   color: #fff;
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.25);
 }
 
 .magnifier-zoom-btn.active {
+  color: #0b0b0d;
+  background: var(--accent-gold);
+  border-color: var(--accent-gold);
+  font-weight: 700;
+}
+
+/* Highly Visible ON / OFF Toggle Button */
+.magnifier-toggle-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 0.35rem 0.85rem;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.toggle-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.magnifier-toggle-btn.active {
+  background: rgba(212, 175, 55, 0.15);
+  border-color: rgba(212, 175, 55, 0.7);
   color: var(--accent-gold);
-  border-color: rgba(212, 175, 55, 0.4);
-  background: rgba(212, 175, 55, 0.1);
+}
+
+.magnifier-toggle-btn.active .toggle-dot {
+  background: #22c55e;
+  box-shadow: 0 0 8px #22c55e;
+}
+
+.magnifier-toggle-btn.inactive {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.magnifier-toggle-btn.inactive .toggle-dot {
+  background: #ef4444;
+  box-shadow: 0 0 6px #ef4444;
+}
+
+.magnifier-toggle-btn:hover {
+  transform: translateY(-1px);
 }
 
 /* Magnifier Loupe Glass */
@@ -120,13 +165,13 @@
   position: absolute;
   pointer-events: none;
   border-radius: 50%;
-  border: 2px solid rgba(212, 175, 55, 0.85);
+  border: 2px solid rgba(212, 175, 55, 0.95);
   box-shadow: 
-    0 12px 35px rgba(0, 0, 0, 0.85),
-    inset 0 0 20px rgba(0, 0, 0, 0.45),
-    0 0 0 1px rgba(255, 255, 255, 0.15);
+    0 14px 40px rgba(0, 0, 0, 0.9),
+    inset 0 0 25px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.2);
   background-repeat: no-repeat;
-  z-index: 30;
+  z-index: 30; /* Stays below z-index: 100 toolbar */
   transform: translate(-50%, -50%);
   animation: lens-appear 0.15s ease-out;
 }
@@ -134,7 +179,7 @@
 @keyframes lens-appear {
   0% {
     opacity: 0;
-    transform: translate(-50%, -50%) scale(0.8);
+    transform: translate(-50%, -50%) scale(0.85);
   }
   100% {
     opacity: 1;
@@ -153,10 +198,10 @@
   border-radius: 50%;
   background: linear-gradient(
     135deg, 
-    rgba(255, 255, 255, 0.25) 0%, 
+    rgba(255, 255, 255, 0.3) 0%, 
     rgba(255, 255, 255, 0.05) 40%, 
     transparent 60%, 
-    rgba(212, 175, 55, 0.15) 100%
+    rgba(212, 175, 55, 0.2) 100%
   );
   pointer-events: none;
 }
@@ -166,18 +211,18 @@
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   transform: translate(-50%, -50%);
   pointer-events: none;
-  opacity: 0.55;
+  opacity: 0.65;
 }
 
 .magnifier-reticle::before,
 .magnifier-reticle::after {
   content: '';
   position: absolute;
-  background: rgba(212, 175, 55, 0.9);
+  background: rgba(212, 175, 55, 0.95);
 }
 
 /* Vertical reticle line */
@@ -201,14 +246,19 @@
 /* Mobile Adjustments */
 @media (max-width: 768px) {
   .magnifier-toolbar {
-    top: 0.75rem;
-    left: 0.75rem;
-    right: 0.75rem;
-    flex-wrap: wrap;
+    bottom: 0.8rem;
+    left: 0.8rem;
+    right: 0.8rem;
+    flex-direction: column-reverse;
+    align-items: stretch;
     gap: 0.5rem;
   }
+  .magnifier-controls {
+    justify-content: center;
+  }
   .magnifier-hint-badge {
-    font-size: 0.7rem;
-    padding: 0.25rem 0.6rem;
+    justify-content: center;
+    font-size: 0.72rem;
+    padding: 0.3rem 0.6rem;
   }
 }
