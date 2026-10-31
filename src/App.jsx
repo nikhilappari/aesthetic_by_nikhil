@@ -92,6 +92,44 @@ function App() {
 
   const [clientRequests, setClientRequests] = useState([]);
 
+  // Track visits from WhatsApp status, social links, and direct traffic
+  useEffect(() => {
+    try {
+      const loggedThisSession = sessionStorage.getItem('aesthetic_visit_tracked');
+      if (!loggedThisSession) {
+        let visitorId = localStorage.getItem('aesthetic_visitor_id');
+        if (!visitorId) {
+          visitorId = `v_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+          localStorage.setItem('aesthetic_visitor_id', visitorId);
+        }
+
+        let ref = document.referrer || 'direct';
+        if (ref.includes('whatsapp') || ref.includes('wa.me')) {
+          ref = 'WhatsApp Status / Chat';
+        } else if (ref.includes('instagram.com')) {
+          ref = 'Instagram';
+        } else if (ref.includes('facebook.com')) {
+          ref = 'Facebook';
+        } else if (ref === '' || ref === 'direct') {
+          const params = new URLSearchParams(window.location.search);
+          const source = params.get('utm_source') || params.get('ref') || params.get('source');
+          if (source) ref = source;
+          else ref = 'Direct / WhatsApp Link';
+        }
+
+        api.recordVisit({
+          visitorId,
+          path: window.location.pathname,
+          referrer: ref
+        });
+
+        sessionStorage.setItem('aesthetic_visit_tracked', 'true');
+      }
+    } catch (e) {
+      // Non-fatal analytics logging
+    }
+  }, []);
+
   // Load and refresh data from backend in background without blocking UI
   useEffect(() => {
     const loadAppData = async () => {

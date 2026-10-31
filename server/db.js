@@ -63,7 +63,7 @@ class DatabaseWrapper {
     if (this.isPg) {
       let sqlToRun = convertSql(sql);
       const upper = sqlToRun.toUpperCase();
-      if (upper.startsWith('INSERT') && (upper.includes('USERS') || upper.includes('ARTWORKS') || (upper.includes('CLIENT_REQUESTS') || upper.includes('CONSENT_RECORDS') || upper.includes('DATA_RIGHTS_REQUESTS'))) && !upper.includes('RETURNING')) {
+      if (upper.startsWith('INSERT') && (upper.includes('USERS') || upper.includes('ARTWORKS') || (upper.includes('CLIENT_REQUESTS') || upper.includes('CONSENT_RECORDS') || upper.includes('DATA_RIGHTS_REQUESTS') || upper.includes('SITE_VISITS'))) && !upper.includes('RETURNING')) {
         sqlToRun += ' RETURNING id';
       }
       const res = await this.client.query(sqlToRun, params);
@@ -137,6 +137,27 @@ export async function initDb() {
   } catch (e) {
     // Column already exists, safe to ignore
   }
+
+  // Migrate existing users table for created_at and last_login tracking
+  try {
+    await db.exec("ALTER TABLE users ADD COLUMN created_at TEXT");
+  } catch (e) {}
+
+  try {
+    await db.exec("ALTER TABLE users ADD COLUMN last_login TEXT");
+  } catch (e) {}
+
+  // Create Site Visits Table for Visitor Analytics
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS site_visits (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      visitor_id TEXT NOT NULL,
+      path TEXT DEFAULT '/',
+      referrer TEXT DEFAULT 'direct',
+      user_agent TEXT,
+      created_at TEXT NOT NULL
+    )
+  `);
 
   // Create Artworks Table
   await db.exec(`

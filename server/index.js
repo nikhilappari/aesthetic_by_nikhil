@@ -734,6 +734,99 @@ app.put('/api/data-rights/:id', authenticateToken, requireAdmin, async (req, res
   }
 });
 
+
+/* ==================== VISITOR ANALYTICS & CUSTOMER MANAGEMENT ==================== */
+
+// Record a site visit (called on page load)
+app.post('/api/analytics/visit', async (req, res) => {
+  const { visitorId, path, referrer } = req.body;
+  if (!visitorId) {
+    return res.status(400).json({ message: 'visitorId required' });
+  }
+
+  const userAgent = req.headers['user-agent'] || 'unknown';
+  const cleanReferrer = referrer || req.headers['referer'] || 'direct';
+  const now = new Date().toISOString();
+
+  try {
+    const db = await getDb();
+    await db.run(
+      "INSERT INTO site_visits (visitor_id, path, referrer, user_agent, created_at) VALUES (?, ?, ?, ?, ?)",
+      [visitorId, path || '/', cleanReferrer, userAgent, now]
+    );
+    return res.status(201).json({ success: true });
+  } catch (error) {
+    console.error('Analytics visit error:', error);
+    return res.status(500).json({ message: 'Failed to record visit' });
+  }
+});
+
+// Admin: Get visitor analytics statistics
+app.get('/api/analytics/stats', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const db = await getDb();
+    const today = new Date().toISOString().split('T')[0];
+
+    const totalRow = await db.get("SELECT COUNT(*) as count FROM site_visits");
+    const uniqueRow = await db.get("SELECT COUNT(DISTINCT visitor_id) as count FROM site_visits");
+    const todayRow = await db.get("SELECT COUNT(*) as count FROM site_visits WHERE created_at LIKE ?", [`${today}%`]);
+    const todayUniqueRow = await db.get("SELECT COUNT(DISTINCT visitor_id) as count FROM site_visits WHERE created_at LIKE ?", [`${today}%`]);
+
+    // Top referral sources (e.g. WhatsApp, Instagram, Direct)
+    const referrers = await db.all(
+      "SELECT referrer, COUNT(*) as count FROM site_visits GROUP BY referrer ORDER BY count DESC LIMIT 5"
+    );
+
+    const recentVisits = await db.all(
+      "SELECT id, visitor_id, path, referrer, created_at FROM site_visits ORDER BY created_at DESC LIMIT 15"
+    );
+
+    return res.json({
+      totalVisits: totalRow?.count || 0,
+      uniqueVisitors: uniqueRow?.count || 0,
+      todayVisits: todayRow?.count || 0,
+      todayUnique: todayUniqueRow?.count || 0,
+      referrers: referrers || [],
+      recentVisits: recentVisits || []
+    });
+  } catch (error) {
+    console.error('Analytics stats error:', error);
+    return res.status(500).json({ message: 'Failed to fetch analytics' });
+  }
+});
+
+// Admin: Get all registered customers and login/order stats
+app.get('/api/admin/users', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const db = await getDb();
+    const users = await db.all(
+      `SELECT u.id, u.username, u.role, u.google_id, u.created_at, u.last_login,
+              (SELECT COUNT(*) FROM client_requests WHERE name = u.username) as order_count
+       FROM users u
+       ORDER BY u.id DESC`
+    );
+
+    const today = new Date().toISOString().split('T')[0];
+    const totalUsers = users.length;
+    const googleUsers = users.filter(u => u.google_id).length;
+    const directUsers = users.filter(u => !u.google_id && u.role !== 'admin').length;
+    const activeToday = users.filter(u => u.last_login && u.last_login.startsWith(today)).length;
+
+    return res.json({
+      stats: {
+        totalUsers,
+        googleUsers,
+        directUsers,
+        activeToday
+      },
+      users
+    });
+  } catch (error) {
+    console.error('Admin users error:', error);
+    return res.status(500).json({ message: 'Failed to fetch customer directory' });
+  }
+});
+
 /* ======================================================= */
 
 // Start Server

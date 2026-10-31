@@ -55,6 +55,68 @@ const AdminDashboard = ({ artworks, setArtworks, transformation, setTransformati
   }, [clientRequests, selectedRequest]);
 
   // Cloudinary upload loading states
+  // Visitor Analytics & Customer Directory States
+  const [visitorStats, setVisitorStats] = useState({
+    totalVisits: 0,
+    uniqueVisitors: 0,
+    todayVisits: 0,
+    todayUnique: 0,
+    referrers: [],
+    recentVisits: []
+  });
+
+  const [customerData, setCustomerData] = useState({
+    stats: {
+      totalUsers: 0,
+      googleUsers: 0,
+      directUsers: 0,
+      activeToday: 0
+    },
+    users: []
+  });
+
+  const [customerSearch, setCustomerSearch] = useState('');
+  const [customerFilter, setCustomerFilter] = useState('all');
+
+  const loadAnalyticsAndUsers = async () => {
+    try {
+      const [analyticsRes, usersRes] = await Promise.allSettled([
+        api.getAnalyticsStats(),
+        api.getAdminUsers()
+      ]);
+      if (analyticsRes.status === 'fulfilled' && analyticsRes.value) {
+        setVisitorStats(analyticsRes.value);
+      }
+      if (usersRes.status === 'fulfilled' && usersRes.value) {
+        setCustomerData(usersRes.value);
+      }
+    } catch (err) {
+      console.warn("Could not load analytics/users:", err);
+    }
+  };
+
+  useEffect(() => {
+    loadAnalyticsAndUsers();
+  }, [activeTab]);
+
+  const isUserActiveRecently = (lastLogin) => {
+    if (!lastLogin) return false;
+    const diffHours = (new Date() - new Date(lastLogin)) / (1000 * 60 * 60);
+    return diffHours <= 24;
+  };
+
+  const filteredCustomers = (customerData.users || []).filter(cust => {
+    const matchesSearch = !customerSearch.trim() || 
+      cust.username.toLowerCase().includes(customerSearch.trim().toLowerCase());
+    
+    if (!matchesSearch) return false;
+
+    if (customerFilter === 'google') return Boolean(cust.google_id);
+    if (customerFilter === 'direct') return !cust.google_id && cust.role !== 'admin';
+    if (customerFilter === 'active') return isUserActiveRecently(cust.last_login);
+    return true;
+  });
+
   const [isUploadingSketch, setIsUploadingSketch] = useState(false);
   const [isUploadingBefore, setIsUploadingBefore] = useState(false);
   const [isUploadingAfter, setIsUploadingAfter] = useState(false);
@@ -182,6 +244,9 @@ const AdminDashboard = ({ artworks, setArtworks, transformation, setTransformati
     if ((tabName === 'requests' || tabName === 'overview') && reloadRequests) {
       reloadRequests();
     }
+    if (tabName === 'overview' || tabName === 'customers') {
+      loadAnalyticsAndUsers();
+    }
   };
 
   return (
@@ -194,7 +259,16 @@ const AdminDashboard = ({ artworks, setArtworks, transformation, setTransformati
         <nav className="admin-nav">
           <button className={`admin-nav-item ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => handleTabChange('overview')}>Overview</button>
           <button className={`admin-nav-item ${activeTab === 'sketches' ? 'active' : ''}`} onClick={() => handleTabChange('sketches')}>Manage Sketches</button>
-          <button className={`admin-nav-item ${activeTab === 'requests' ? 'active' : ''}`} onClick={() => handleTabChange('requests')}>Client Requests</button>
+          <button className={`admin-nav-item ${activeTab === 'requests' ? 'active' : ''}`} onClick={() => handleTabChange('requests')}>
+            Client Requests
+            {liveNewRequests > 0 && <span className="nav-badge-count">{liveNewRequests}</span>}
+          </button>
+          <button className={`admin-nav-item ${activeTab === 'customers' ? 'active' : ''}`} onClick={() => handleTabChange('customers')}>
+            Customer Accounts
+            {customerData.stats.totalUsers > 0 && (
+              <span className="nav-badge-count" style={{ background: '#22c55e' }}>{customerData.stats.totalUsers}</span>
+            )}
+          </button>
           <button className={`admin-nav-item ${activeTab === 'pricing' ? 'active' : ''}`} onClick={() => handleTabChange('pricing')}>Pricing & Settings</button>
         </nav>
         <div className="admin-sidebar-footer">
@@ -216,6 +290,82 @@ const AdminDashboard = ({ artworks, setArtworks, transformation, setTransformati
                   </div>
                 </div>
               ))}
+            </div>
+
+            {/* Live Website Visitors & WhatsApp Traffic Card */}
+            <div className="traffic-analytics-box glass mt-2">
+              <div className="traffic-header">
+                <h3 className="traffic-title">
+                  <span>👁️</span> Live Website Visitors & WhatsApp Traffic
+                </h3>
+                <button type="button" className="btn-secondary-small" onClick={loadAnalyticsAndUsers} style={{ padding: '5px 12px', fontSize: '0.78rem' }}>
+                  ↻ Refresh Live Counts
+                </button>
+              </div>
+
+              <div className="admin-stats-grid">
+                <div className="admin-stat-card glass" style={{ borderLeft: '3px solid var(--accent-gold)' }}>
+                  <span className="stat-icon">👁️</span>
+                  <div className="stat-info">
+                    <p className="stat-label">Total Site Visits</p>
+                    <h3 className="stat-value">{visitorStats.totalVisits || 0}</h3>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>All website page views</span>
+                  </div>
+                </div>
+
+                <div className="admin-stat-card glass" style={{ borderLeft: '3px solid #60a5fa' }}>
+                  <span className="stat-icon">👥</span>
+                  <div className="stat-info">
+                    <p className="stat-label">Unique People Visited</p>
+                    <h3 className="stat-value" style={{ color: '#60a5fa' }}>{visitorStats.uniqueVisitors || 0}</h3>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Distinct contacts/devices</span>
+                  </div>
+                </div>
+
+                <div className="admin-stat-card glass" style={{ borderLeft: '3px solid #22c55e' }}>
+                  <span className="stat-icon">📅</span>
+                  <div className="stat-info">
+                    <p className="stat-label">Visits Today</p>
+                    <h3 className="stat-value" style={{ color: '#22c55e' }}>{visitorStats.todayVisits || 0}</h3>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>({visitorStats.todayUnique || 0} unique today)</span>
+                  </div>
+                </div>
+
+                <div className="admin-stat-card glass" style={{ borderLeft: '3px solid #c084fc' }}>
+                  <span className="stat-icon">🔐</span>
+                  <div className="stat-info">
+                    <p className="stat-label">Registered Customers</p>
+                    <h3 className="stat-value" style={{ color: '#c084fc' }}>{customerData.stats.totalUsers || 0}</h3>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{customerData.stats.activeToday || 0} logged in today</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="referral-grid">
+                <div className="referral-card">
+                  <span className="referral-icon">📱</span>
+                  <div className="referral-info">
+                    <p>WhatsApp / Status Link Clicks</p>
+                    <h4>
+                      {(visitorStats.referrers || []).filter(r => r.referrer && r.referrer.toLowerCase().includes('whatsapp')).reduce((acc, curr) => acc + curr.count, 0) || visitorStats.todayVisits || 0} visits
+                    </h4>
+                  </div>
+                </div>
+                <div className="referral-card">
+                  <span className="referral-icon">🌐</span>
+                  <div className="referral-info">
+                    <p>Google OAuth Customers</p>
+                    <h4>{customerData.stats.googleUsers || 0} accounts</h4>
+                  </div>
+                </div>
+                <div className="referral-card">
+                  <span className="referral-icon">🔑</span>
+                  <div className="referral-info">
+                    <p>Direct Email Accounts</p>
+                    <h4>{customerData.stats.directUsers || 0} accounts</h4>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="admin-card glass mt-2">
@@ -556,6 +706,169 @@ const AdminDashboard = ({ artworks, setArtworks, transformation, setTransformati
           </div>
         )}
       </div>
+
+
+        {activeTab === 'customers' && (
+          <div className="admin-tab-content">
+            <div className="admin-header-row">
+              <h2 className="admin-page-title">Customer Accounts & Login Management</h2>
+              <button className="btn-secondary-small" onClick={loadAnalyticsAndUsers} style={{ padding: '6px 14px' }}>
+                ↻ Refresh Directory
+              </button>
+            </div>
+
+            {/* Quick Metrics */}
+            <div className="admin-stats-grid mb-2">
+              <div className="admin-stat-card glass">
+                <span className="stat-icon">👥</span>
+                <div className="stat-info">
+                  <p className="stat-label">Total Customers</p>
+                  <h3 className="stat-value">{customerData.stats.totalUsers}</h3>
+                </div>
+              </div>
+              <div className="admin-stat-card glass">
+                <span className="stat-icon">🌐</span>
+                <div className="stat-info">
+                  <p className="stat-label">Google OAuth</p>
+                  <h3 className="stat-value">{customerData.stats.googleUsers}</h3>
+                </div>
+              </div>
+              <div className="admin-stat-card glass">
+                <span className="stat-icon">🔑</span>
+                <div className="stat-info">
+                  <p className="stat-label">Email / Password</p>
+                  <h3 className="stat-value">{customerData.stats.directUsers}</h3>
+                </div>
+              </div>
+              <div className="admin-stat-card glass">
+                <span className="stat-icon">⚡</span>
+                <div className="stat-info">
+                  <p className="stat-label">Active / Logged In Today</p>
+                  <h3 className="stat-value" style={{ color: '#22c55e' }}>{customerData.stats.activeToday}</h3>
+                </div>
+              </div>
+            </div>
+
+            {/* Directory Card */}
+            <div className="admin-card glass">
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.5rem', alignItems: 'center' }}>
+                <input 
+                  type="text" 
+                  placeholder="🔍 Search customer by username / email..." 
+                  value={customerSearch}
+                  onChange={(e) => setCustomerSearch(e.target.value)}
+                  style={{ flexGrow: 1, minWidth: '260px', padding: '0.65rem 1rem', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', borderRadius: '8px', color: '#fff', fontSize: '0.9rem' }}
+                />
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  {['all', 'google', 'direct', 'active'].map(f => (
+                    <button 
+                      key={f}
+                      type="button" 
+                      onClick={() => setCustomerFilter(f)}
+                      style={{
+                        padding: '0.45rem 0.9rem',
+                        borderRadius: '20px',
+                        border: '1px solid var(--border-color)',
+                        background: customerFilter === f ? 'var(--accent-gold)' : 'rgba(255,255,255,0.04)',
+                        color: customerFilter === f ? '#0b0b0e' : 'var(--text-secondary)',
+                        fontWeight: 600,
+                        fontSize: '0.78rem',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {f === 'all' && `All (${customerData.users.length})`}
+                      {f === 'google' && `Google (${customerData.stats.googleUsers})`}
+                      {f === 'direct' && `Email (${customerData.stats.directUsers})`}
+                      {f === 'active' && `Active Today (${customerData.stats.activeToday})`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="admin-table-container">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Customer / Email</th>
+                      <th>Login Method</th>
+                      <th>Role</th>
+                      <th>Signed Up</th>
+                      <th>Last Login / Activity</th>
+                      <th>Orders Placed</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredCustomers.length > 0 ? (
+                      filteredCustomers.map(cust => (
+                        <tr key={cust.id}>
+                          <td>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                              <span style={{ width: '32px', height: '32px', borderRadius: '50%', background: cust.google_id ? '#4285F4' : 'var(--accent-gold)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 'bold', fontSize: '13px' }}>
+                                {cust.username.charAt(0).toUpperCase()}
+                              </span>
+                              <div>
+                                <strong style={{ color: '#fff', fontSize: '0.92rem' }}>{cust.username}</strong>
+                              </div>
+                            </div>
+                          </td>
+                          <td>
+                            {cust.google_id ? (
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 8px', borderRadius: '4px', background: 'rgba(66, 133, 244, 0.15)', color: '#60a5fa', fontSize: '0.75rem', fontWeight: 600 }}>
+                                🌐 Google OAuth
+                              </span>
+                            ) : (
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 8px', borderRadius: '4px', background: 'rgba(212, 175, 55, 0.15)', color: 'var(--accent-gold)', fontSize: '0.75rem', fontWeight: 600 }}>
+                                🔑 Email / Password
+                              </span>
+                            )}
+                          </td>
+                          <td>
+                            <span style={{ textTransform: 'capitalize', fontSize: '0.85rem', color: cust.role === 'admin' ? 'var(--accent-gold)' : 'inherit' }}>
+                              {cust.role}
+                            </span>
+                          </td>
+                          <td>
+                            <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                              {cust.created_at ? new Date(cust.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Active client'}
+                            </span>
+                          </td>
+                          <td>
+                            <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                              {cust.last_login ? new Date(cust.last_login).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Not logged in yet'}
+                            </span>
+                          </td>
+                          <td>
+                            <span style={{ padding: '3px 9px', borderRadius: '12px', background: cust.order_count > 0 ? 'rgba(34, 197, 94, 0.15)' : 'rgba(255,255,255,0.05)', color: cust.order_count > 0 ? '#4ade80' : 'var(--text-secondary)', fontSize: '0.8rem', fontWeight: 600 }}>
+                              {cust.order_count} {cust.order_count === 1 ? 'order' : 'orders'}
+                            </span>
+                          </td>
+                          <td>
+                            {isUserActiveRecently(cust.last_login) ? (
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#22c55e', fontSize: '0.8rem', fontWeight: 600 }}>
+                                <span className="user-status-dot active"></span> Active recently
+                              </span>
+                            ) : (
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#94a3b8', fontSize: '0.8rem' }}>
+                                <span className="user-status-dot offline"></span> Offline
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="7" style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-secondary)' }}>
+                          No customer accounts found matching your query.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
 
       {showUploadModal && (
         <div className="admin-modal-overlay">

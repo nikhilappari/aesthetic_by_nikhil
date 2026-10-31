@@ -145,5 +145,31 @@ export const api = {
    */
   async updateDataRightsRequest(id, data) {
     return this.put(`/api/data-rights/${id}`, data);
+  },
+
+  /**
+   * Record page visit for site traffic analytics (WhatsApp status, social clicks, etc.)
+   */
+  async recordVisit(data) {
+    try {
+      return await this.post('/api/analytics/visit', data);
+    } catch (e) {
+      // Non-fatal analytics ping
+      return { success: false };
+    }
+  },
+
+  /**
+   * Fetch visitor analytics stats (Admin only)
+   */
+  async getAnalyticsStats() {
+    return this.get('/api/analytics/stats');
+  },
+
+  /**
+   * Fetch registered customers directory and login statistics (Admin only)
+   */
+  async getAdminUsers() {
+    return this.get('/api/admin/users');
   }
 };
