@@ -190,7 +190,7 @@ app.post('/api/auth/login', async (req, res) => {
 
   try {
     const db = await getDb();
-    const user = await db.get("SELECT * FROM users WHERE username = ?", [username]);
+    const user = await db.get("SELECT * FROM users WHERE username = ?", [username.trim()]);
     if (!user) {
       return res.status(400).json({ message: 'Invalid username or password.' });
     }
@@ -199,6 +199,63 @@ app.post('/api/auth/login', async (req, res) => {
     if (!validPassword) {
       return res.status(400).json({ message: 'Invalid username or password.' });
     }
+
+    // STRICT OTP VERIFICATION ONLY FOR ADMIN ROLE
+    if (user.role === 'admin' || user.username === 'aesthetic_by_nikhil') {
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 minutes expiry
+      const now = new Date().toISOString();
+
+      // Save OTP in database
+      await db.run(
+        "INSERT INTO otp_verifications (identifier, otp_code, purpose, expires_at, used, created_at) VALUES (?, ?, 'admin_login', ?, 0, ?)",
+        [user.username, otp, expiresAt, now]
+      );
+
+      // Sign short-lived temp token for OTP verification
+      const tempToken = jwt.sign(
+        { id: user.id, username: user.username, role: 'admin', isPendingOtp: true },
+        JWT_SECRET,
+        { expiresIn: '10m' }
+      );
+
+      const adminEmail = process.env.ADMIN_EMAIL || 'nikhilappari2006@gmail.com';
+
+      // Dispatch OTP Email
+      await sendEmail({
+        to: adminEmail,
+        subject: `Your Admin Login Security OTP: ${otp}`,
+        text: `Your Aesthetic by Nikhil Admin Authentication Code is ${otp}. Valid for 10 minutes.`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #0f1216; color: #f8fafc;">
+            <h2 style="color: #d4af37; margin-top: 0; font-family: serif;">Aesthetic by Nikhil • Admin 2FA</h2>
+            <p style="font-size: 15px; color: #cbd5e1;">A login request was initiated for your Atelier Admin Console.</p>
+            <div style="text-align: center; margin: 28px 0;">
+              <span style="display: inline-block; font-size: 34px; letter-spacing: 8px; font-weight: bold; color: #d4af37; background: rgba(212, 175, 55, 0.12); border: 1px dashed #d4af37; padding: 12px 24px; border-radius: 8px; font-family: monospace;">
+                ${otp}
+              </span>
+            </div>
+            <p style="font-size: 13px; color: #94a3b8; line-height: 1.5;">This verification code is valid for <strong>10 minutes</strong>. If you did not initiate this login, please change your password immediately.</p>
+          </div>
+        `
+      });
+
+      console.log(`[ADMIN OTP GENERATED] For ${user.username}: ${otp} (Dispatched to ${adminEmail})`);
+
+      return res.json({
+        requiresOtp: true,
+        tempToken,
+        message: `Admin Two-Factor OTP has been sent to ${adminEmail}.`,
+        emailHint: 'n***@gmail.com',
+        devOtpCode: process.env.EMAIL_USER ? undefined : otp
+      });
+    }
+
+    // REGULAR CUSTOMER DIRECT LOGIN (NO OTP)
+    const now = new Date().toISOString();
+    try {
+      await db.run("UPDATE users SET last_login = ? WHERE id = ?", [now, user.id]);
+    } catch (e) {}
 
     const payload = { id: user.id, username: user.username, role: user.role };
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
