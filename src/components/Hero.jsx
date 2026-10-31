@@ -1,5 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import heroBgWebp from '../assets/hero-bg.webp';
+import heroBgPng from '../assets/hero-bg.png';
 import './Hero.css';
 
 const Hero = () => {
@@ -20,7 +22,18 @@ const Hero = () => {
 
   return (
     <section className="hero-section" id="home">
-      <div className="hero-parallax-bg" ref={bgRef}></div>
+      <div className="hero-parallax-bg" ref={bgRef}>
+        <picture className="hero-picture">
+          <source srcSet={heroBgWebp} type="image/webp" />
+          <img 
+            src={heroBgPng} 
+            alt="Aesthetic portrait sketches workspace" 
+            className="hero-bg-img"
+            fetchPriority="high"
+            loading="eager"
+          />
+        </picture>
+      </div>
       <div className="hero-overlay"></div>
       <div className="container hero-content">
         <div className="hero-content-overlay"></div>
