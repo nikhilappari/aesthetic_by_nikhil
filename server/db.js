@@ -63,7 +63,7 @@ class DatabaseWrapper {
     if (this.isPg) {
       let sqlToRun = convertSql(sql);
       const upper = sqlToRun.toUpperCase();
-      if (upper.startsWith('INSERT') && (upper.includes('USERS') || upper.includes('ARTWORKS') || (upper.includes('CLIENT_REQUESTS') || upper.includes('CONSENT_RECORDS') || upper.includes('DATA_RIGHTS_REQUESTS') || upper.includes('SITE_VISITS'))) && !upper.includes('RETURNING')) {
+      if (upper.startsWith('INSERT') && (upper.includes('USERS') || upper.includes('ARTWORKS') || (upper.includes('CLIENT_REQUESTS') || upper.includes('CONSENT_RECORDS') || upper.includes('DATA_RIGHTS_REQUESTS') || upper.includes('SITE_VISITS') || upper.includes('OTP_VERIFICATIONS'))) && !upper.includes('RETURNING')) {
         sqlToRun += ' RETURNING id';
       }
       const res = await this.client.query(sqlToRun, params);
@@ -155,6 +155,19 @@ export async function initDb() {
       path TEXT DEFAULT '/',
       referrer TEXT DEFAULT 'direct',
       user_agent TEXT,
+      created_at TEXT NOT NULL
+    )
+  `);
+
+  // Create OTP Verifications Table (Admin Login OTP & Forgot Password Reset)
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS otp_verifications (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      identifier TEXT NOT NULL,
+      otp_code TEXT NOT NULL,
+      purpose TEXT NOT NULL,
+      expires_at TEXT NOT NULL,
+      used INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL
     )
   `);

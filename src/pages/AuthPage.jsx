@@ -3,7 +3,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { api } from '../utils/api';
 import './AuthPage.css';
 
-const AuthPage = ({ login, signup, loginWithGoogle }) => {
+const AuthPage = ({ login, signup, loginWithGoogle, finalizeLogin }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [consentPolicy, setConsentPolicy] = useState(false);
   const [consentMarketing, setConsentMarketing] = useState(false);
@@ -13,7 +13,30 @@ const AuthPage = ({ login, signup, loginWithGoogle }) => {
     confirmPassword: ''
   });
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Admin 2FA OTP States
+  const [showAdminOtp, setShowAdminOtp] = useState(false);
+  const [adminTempToken, setAdminTempToken] = useState('');
+  const [adminOtpCode, setAdminOtpCode] = useState('');
+  const [adminEmailHint, setAdminEmailHint] = useState('nikhilappari2006@gmail.com');
+  const [adminDevOtp, setAdminDevOtp] = useState('');
+  const [adminOtpError, setAdminOtpError] = useState('');
+  const [adminOtpSuccess, setAdminOtpSuccess] = useState('');
+
+  // Forgot Password States (Available for both Users & Admin)
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotStep, setForgotStep] = useState(1); // 1 = Request Code, 2 = Enter Code & New Password
+  const [forgotIdentifier, setForgotIdentifier] = useState('');
+  const [forgotTargetUsername, setForgotTargetUsername] = useState('');
+  const [forgotOtp, setForgotOtp] = useState('');
+  const [forgotNewPassword, setForgotNewPassword] = useState('');
+  const [forgotConfirmPassword, setForgotConfirmPassword] = useState('');
+  const [forgotEmailHint, setForgotEmailHint] = useState('');
+  const [forgotDevOtp, setForgotDevOtp] = useState('');
+  const [forgotError, setForgotError] = useState('');
+  const [forgotSuccess, setForgotSuccess] = useState('');
   
   // Google Auth Client ID State
   const defaultClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '655065657609-4p51158vudfvmdq2vki69vurkoqj457q.apps.googleusercontent.com';
@@ -23,7 +46,6 @@ const AuthPage = ({ login, signup, loginWithGoogle }) => {
 
   const navigate = useNavigate();
   const location = useLocation();
-  const from = location.state?.from?.pathname || "/";
 
   // Fetch Google Client ID and initialize Google script
   useEffect(() => {
@@ -42,7 +64,6 @@ const AuthPage = ({ login, signup, loginWithGoogle }) => {
       }
 
       if (activeClientId) {
-        // Check if Google GSI client is already loaded, otherwise check periodically
         if (window.google?.accounts?.id) {
           setIsGoogleScriptLoaded(true);
         } else {
@@ -62,7 +83,7 @@ const AuthPage = ({ login, signup, loginWithGoogle }) => {
 
   // Initialize and render Google Sign-In Button on both tabs
   useEffect(() => {
-    if (isGoogleScriptLoaded && googleClientId && googleBtnContainerRef.current) {
+    if (isGoogleScriptLoaded && googleClientId && googleBtnContainerRef.current && !showAdminOtp && !showForgotPassword) {
       try {
         /* global google */
         if (window.google?.accounts?.id) {
@@ -80,7 +101,7 @@ const AuthPage = ({ login, signup, loginWithGoogle }) => {
               type: 'standard',
               theme: 'filled_dark',
               size: 'large',
-              text: 'continue_with', // Render "Continue with Google"
+              text: 'continue_with',
               shape: 'rectangular',
               logo_alignment: 'left',
               width: googleBtnContainerRef.current.offsetWidth || 354
@@ -91,7 +112,7 @@ const AuthPage = ({ login, signup, loginWithGoogle }) => {
         console.error("Google Sign-In button render failed:", err);
       }
     }
-  }, [isLogin, isGoogleScriptLoaded, googleClientId]); // Re-render conditionally when switching tabs
+  }, [isLogin, isGoogleScriptLoaded, googleClientId, showAdminOtp, showForgotPassword]);
 
   const handleGoogleCredentialResponse = async (response) => {
     setError('');
@@ -123,18 +144,32 @@ const AuthPage = ({ login, signup, loginWithGoogle }) => {
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
     setError('');
+    setSuccessMessage('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setSuccessMessage('');
     setIsSubmitting(true);
     
     try {
       if (isLogin) {
-        const user = await login(formData.username, formData.password);
-        if (user) {
-          if (user.role === 'admin') {
+        const response = await login(formData.username, formData.password);
+        
+        // ADMIN ONLY: Intercept and trigger 2FA OTP verification
+        if (response?.requiresOtp) {
+          setAdminTempToken(response.tempToken);
+          setAdminEmailHint(response.emailHint || 'nikhilappari2006@gmail.com');
+          setAdminDevOtp(response.devOtpCode || '');
+          setShowAdminOtp(true);
+          setIsSubmitting(false);
+          return;
+        }
+
+        // REGULAR CUSTOMER LOGIN
+        if (response) {
+          if (response.role === 'admin') {
             navigate('/admin');
           } else {
             navigate('/');
@@ -162,7 +197,6 @@ const AuthPage = ({ login, signup, loginWithGoogle }) => {
 
         const result = await signup(formData.username, formData.password);
         if (result.success) {
-          // Record explicit consent per DPDP Act Section 6
           api.recordConsent({
             identifier: formData.username,
             purpose: 'account_creation_dpdp',
@@ -189,6 +223,132 @@ const AuthPage = ({ login, signup, loginWithGoogle }) => {
     }
   };
 
+  // Admin 2FA Verification Handler
+  const handleVerifyAdminOtp = async (e) => {
+    e.preventDefault();
+    setAdminOtpError('');
+    setAdminOtpSuccess('');
+
+    if (!adminOtpCode.trim() || adminOtpCode.trim().length !== 6) {
+      setAdminOtpError('Please enter a valid 6-digit verification code.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const res = await api.verifyAdminOtp({
+        tempToken: adminTempToken,
+        otp: adminOtpCode.trim()
+      });
+
+      if (res?.success && res.user && res.token) {
+        if (finalizeLogin) {
+          finalizeLogin(res.user, res.token);
+        } else {
+          localStorage.setItem('token', res.token);
+          localStorage.setItem('cached_user', JSON.stringify(res.user));
+        }
+        navigate('/admin');
+      } else {
+        setAdminOtpError(res?.message || 'Verification failed. Please check the code.');
+      }
+    } catch (err) {
+      setAdminOtpError(err.message || 'OTP verification failed.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Admin Resend OTP Handler
+  const handleResendAdminOtp = async () => {
+    setAdminOtpError('');
+    setAdminOtpSuccess('');
+    try {
+      const res = await api.resendAdminOtp({ tempToken: adminTempToken });
+      if (res?.success) {
+        setAdminOtpSuccess('New 6-digit verification code sent to your email!');
+        if (res.devOtpCode) setAdminDevOtp(res.devOtpCode);
+      }
+    } catch (err) {
+      setAdminOtpError(err.message || 'Failed to resend OTP.');
+    }
+  };
+
+  // Forgot Password: Step 1 Request Code
+  const handleRequestPasswordReset = async (e) => {
+    e.preventDefault();
+    setForgotError('');
+    setForgotSuccess('');
+
+    if (!forgotIdentifier.trim()) {
+      setForgotError('Please enter your registered username or email.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const res = await api.forgotPassword({ identifier: forgotIdentifier.trim() });
+      if (res?.success) {
+        setForgotTargetUsername(res.username);
+        setForgotEmailHint(res.emailHint || 'your registered email');
+        setForgotDevOtp(res.devOtpCode || '');
+        setForgotStep(2);
+        setForgotSuccess(`Verification code dispatched to ${res.emailHint || 'your email'}.`);
+      } else {
+        setForgotError(res?.message || 'Account not found.');
+      }
+    } catch (err) {
+      setForgotError(err.message || 'Could not find account.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Forgot Password: Step 2 Reset Password
+  const handleExecutePasswordReset = async (e) => {
+    e.preventDefault();
+    setForgotError('');
+    setForgotSuccess('');
+
+    if (!forgotOtp.trim() || forgotOtp.trim().length !== 6) {
+      setForgotError('Please enter the 6-digit verification code.');
+      return;
+    }
+
+    if (forgotNewPassword.length < 6) {
+      setForgotError('New password must be at least 6 characters long.');
+      return;
+    }
+
+    if (forgotNewPassword !== forgotConfirmPassword) {
+      setForgotError('New passwords do not match.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const res = await api.resetPassword({
+        username: forgotTargetUsername,
+        otp: forgotOtp.trim(),
+        newPassword: forgotNewPassword
+      });
+
+      if (res?.success) {
+        setShowForgotPassword(false);
+        setIsLogin(true);
+        setFormData(prev => ({ ...prev, username: forgotTargetUsername, password: '' }));
+        setSuccessMessage('Password reset successfully! Please log in with your new password.');
+        setError('');
+      } else {
+        setForgotError(res?.message || 'Password reset failed.');
+      }
+    } catch (err) {
+      setForgotError(err.message || 'Password reset failed.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handlePlaceholderClick = () => {
     alert("Google Authentication is in sandbox/setup mode. Please specify GOOGLE_CLIENT_ID in server/.env to activate live Google login!");
   };
@@ -196,162 +356,345 @@ const AuthPage = ({ login, signup, loginWithGoogle }) => {
   return (
     <div className="auth-page-container page-fade-in">
       <div className="auth-card glass">
-        <div className="auth-tabs">
-          <button 
-            className={`auth-tab ${isLogin ? 'active' : ''}`} 
-            onClick={() => { setIsLogin(true); setError(''); }}
-            disabled={isSubmitting}
-          >
-            Login
-          </button>
-          <button 
-            className={`auth-tab ${!isLogin ? 'active' : ''}`} 
-            onClick={() => { setIsLogin(false); setError(''); }}
-            disabled={isSubmitting}
-          >
-            Sign Up
-          </button>
-        </div>
 
-        <h2 className="serif auth-title">
-          {isLogin ? 'Welcome Back' : 'Create Account'}
-        </h2>
-        <p className="auth-subtitle">
-          {isLogin 
-            ? 'Access your dashboard and manage your orders.' 
-            : 'Join our community of art lovers and get your custom sketch.'}
-        </p>
+        {/* ===================================================================
+            VIEW 1: ADMIN 2FA OTP VERIFICATION SCREEN (ONLY FOR ADMIN)
+           =================================================================== */}
+        {showAdminOtp ? (
+          <div className="admin-otp-card module-fade-in">
+            <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+              <span style={{ fontSize: '2.5rem' }}>🛡️</span>
+              <h2 className="serif auth-title" style={{ marginTop: '0.5rem' }}>Admin Two-Factor Authentication</h2>
+              <p className="auth-subtitle" style={{ marginBottom: '1rem' }}>
+                For artist console security, a 6-digit one-time code was sent to:
+                <br />
+                <strong style={{ color: 'var(--accent-gold)' }}>nikhilappari2006@gmail.com</strong>
+              </p>
+              {adminDevOtp && (
+                <div className="dev-otp-badge">
+                  Auto-fill Code: <strong>{adminDevOtp}</strong>
+                </div>
+              )}
+            </div>
 
-        <form key={isLogin ? 'login' : 'signup'} onSubmit={handleSubmit} className="auth-form module-fade-in">
-          <div className="form-group">
-            <label>Username / Email</label>
-            <input 
-              type="text" 
-              name="username"
-              value={formData.username} 
-              onChange={handleChange} 
-              placeholder="Enter username or email"
-              required
-              disabled={isSubmitting}
-            />
-          </div>
-          
-          <div className="form-group">
-            <label>Password</label>
-            <input 
-              type="password" 
-              name="password"
-              value={formData.password} 
-              onChange={handleChange} 
-              placeholder="••••••••"
-              required
-              disabled={isSubmitting}
-            />
-          </div>
+            {adminOtpError && <p className="auth-error">{adminOtpError}</p>}
+            {adminOtpSuccess && <p className="auth-success-alert">{adminOtpSuccess}</p>}
 
-          {!isLogin && (
-            <div className="form-group">
-              <label>Confirm Password</label>
-              <input 
-                type="password" 
-                name="confirmPassword"
-                value={formData.confirmPassword} 
-                onChange={handleChange} 
-                placeholder="••••••••"
-                required
+            <form onSubmit={handleVerifyAdminOtp} className="auth-form">
+              <div className="otp-box-container">
+                <input 
+                  type="text" 
+                  maxLength="6"
+                  placeholder="••••••"
+                  className="otp-big-input"
+                  value={adminOtpCode}
+                  onChange={(e) => setAdminOtpCode(e.target.value.replace(/\D/g, ''))}
+                  autoFocus
+                  required
+                  disabled={isSubmitting}
+                />
+                <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                  Code valid for 10 minutes
+                </span>
+              </div>
+
+              <button type="submit" className="btn-primary w-full mt-1" disabled={isSubmitting}>
+                {isSubmitting ? 'Verifying Admin Security Code...' : 'Verify & Enter Admin Console'}
+              </button>
+            </form>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '1.75rem', fontSize: '0.82rem' }}>
+              <button 
+                type="button" 
+                className="auth-sub-link" 
+                onClick={handleResendAdminOtp}
                 disabled={isSubmitting}
-              />
+              >
+                Resend Code
+              </button>
+              <button 
+                type="button" 
+                className="auth-sub-link" 
+                onClick={() => { setShowAdminOtp(false); setAdminOtpCode(''); setError(''); }}
+              >
+                Cancel & Back to Login
+              </button>
             </div>
-          )}
+          </div>
+        ) : showForgotPassword ? (
+          <div className="forgot-password-card module-fade-in">
+            <h2 className="serif auth-title">Reset Password</h2>
+            <p className="auth-subtitle">
+              {forgotStep === 1 
+                ? 'Enter your registered username or email to receive a 6-digit reset code.' 
+                : `Enter the 6-digit code sent to ${forgotEmailHint} and pick a new password.`}
+            </p>
 
-          {!isLogin && (
-            <div className="dpdp-consent-group" style={{ marginTop: '0.85rem', marginBottom: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.65rem', textAlign: 'left' }}>
-              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', cursor: 'pointer', fontSize: '0.78rem', color: '#c7cbd1', lineHeight: '1.4' }}>
-                <input 
-                  type="checkbox" 
-                  checked={consentPolicy} 
-                  onChange={(e) => setConsentPolicy(e.target.checked)}
-                  style={{ marginTop: '3px', accentColor: 'var(--accent-gold)', width: '15px', height: '15px', flexShrink: 0 }}
-                />
-                <span>
-                  <strong style={{ color: '#fff' }}>[Required]</strong> I consent to Aesthetic by Nikhil processing my username and credentials in accordance with the{' '}
-                  <Link to="/privacy-policy" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-gold)', textDecoration: 'underline' }}>DPDP Privacy Notice</Link> and{' '}
-                  <Link to="/terms-of-service" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-gold)', textDecoration: 'underline' }}>Terms</Link>.
-                </span>
-              </label>
+            {forgotError && <p className="auth-error">{forgotError}</p>}
+            {forgotSuccess && <p className="auth-success-alert">{forgotSuccess}</p>}
+            {forgotDevOtp && forgotStep === 2 && (
+              <div style={{ textAlign: 'center' }}>
+                <span className="dev-otp-badge">Reset Code: {forgotDevOtp}</span>
+              </div>
+            )}
 
-              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', cursor: 'pointer', fontSize: '0.78rem', color: '#9aa0a6', lineHeight: '1.4' }}>
-                <input 
-                  type="checkbox" 
-                  checked={consentMarketing} 
-                  onChange={(e) => setConsentMarketing(e.target.checked)}
-                  style={{ marginTop: '3px', accentColor: 'var(--accent-gold)', width: '15px', height: '15px', flexShrink: 0 }}
-                />
-                <span>
-                  <em>(Optional)</em> I consent to receiving atelier updates, anniversary sketch reminders, and studio preview invitations.
-                </span>
-              </label>
+            {forgotStep === 1 ? (
+              <form onSubmit={handleRequestPasswordReset} className="auth-form">
+                <div className="form-group">
+                  <label>Registered Username or Email</label>
+                  <input 
+                    type="text" 
+                    value={forgotIdentifier}
+                    onChange={(e) => setForgotIdentifier(e.target.value)}
+                    placeholder="Enter username or email"
+                    required
+                    disabled={isSubmitting}
+                  />
+                  <small style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '4px', display: 'block' }}>
+                    Admin account: enter <code>aesthetic_by_nikhil</code> or <code>nikhilappari2006@gmail.com</code>
+                  </small>
+                </div>
+
+                <button type="submit" className="btn-primary w-full mt-1" disabled={isSubmitting}>
+                  {isSubmitting ? 'Dispatching Reset Code...' : 'Send 6-Digit Reset Code'}
+                </button>
+              </form>
+            ) : (
+              <form onSubmit={handleExecutePasswordReset} className="auth-form">
+                <div className="form-group">
+                  <label>6-Digit Reset Code</label>
+                  <input 
+                    type="text" 
+                    maxLength="6"
+                    placeholder="••••••"
+                    style={{ textAlign: 'center', fontSize: '1.4rem', letterSpacing: '6px', fontFamily: 'monospace' }}
+                    value={forgotOtp}
+                    onChange={(e) => setForgotOtp(e.target.value.replace(/\D/g, ''))}
+                    required
+                    disabled={isSubmitting}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>New Password (min 6 characters)</label>
+                  <input 
+                    type="password" 
+                    value={forgotNewPassword}
+                    onChange={(e) => setForgotNewPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                    disabled={isSubmitting}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Confirm New Password</label>
+                  <input 
+                    type="password" 
+                    value={forgotConfirmPassword}
+                    onChange={(e) => setForgotConfirmPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                    disabled={isSubmitting}
+                  />
+                </div>
+
+                <button type="submit" className="btn-primary w-full mt-1" disabled={isSubmitting}>
+                  {isSubmitting ? 'Updating Password...' : 'Reset Password & Proceed'}
+                </button>
+              </form>
+            )}
+
+            <div style={{ textAlign: 'center', marginTop: '1.75rem' }}>
+              <button 
+                type="button" 
+                className="auth-sub-link" 
+                onClick={() => { setShowForgotPassword(false); setForgotStep(1); setForgotError(''); setForgotSuccess(''); }}
+              >
+                ← Back to Login
+              </button>
             </div>
-          )}
+          </div>
+        ) : (
+          <>
+            <div className="auth-tabs">
+              <button 
+                className={`auth-tab ${isLogin ? 'active' : ''}`} 
+                onClick={() => { setIsLogin(true); setError(''); setSuccessMessage(''); }}
+                disabled={isSubmitting}
+              >
+                Login
+              </button>
+              <button 
+                className={`auth-tab ${!isLogin ? 'active' : ''}`} 
+                onClick={() => { setIsLogin(false); setError(''); setSuccessMessage(''); }}
+                disabled={isSubmitting}
+              >
+                Sign Up
+              </button>
+            </div>
 
-          {error && <p className="auth-error">{error}</p>}
-          
-          <button type="submit" className="btn-primary w-full mt-1" disabled={isSubmitting}>
-            {isSubmitting ? 'Processing...' : (isLogin ? 'Login' : 'Create Account')}
-          </button>
-        </form>
+            <h2 className="serif auth-title">
+              {isLogin ? 'Welcome Back' : 'Create Account'}
+            </h2>
+            <p className="auth-subtitle">
+              {isLogin 
+                ? 'Access your dashboard and manage your custom portrait orders.' 
+                : 'Join our community of art lovers and commission your portrait.'}
+            </p>
 
-        <div className="auth-divider">
-          <span>or</span>
-        </div>
+            {successMessage && <p className="auth-success-alert">{successMessage}</p>}
 
-        <div className="google-auth-section">
-          <p style={{ textAlign: 'center', fontSize: '0.72rem', color: '#7a858e', marginBottom: '0.5rem', lineHeight: '1.35' }}>
-            🔒 <span>Identity verified securely under DPDP Act 2023. No access to contacts or personal files.</span>
-          </p>
-          {googleClientId ? (
-            <div 
-              ref={googleBtnContainerRef} 
-              id="google-signin-button" 
-              className="google-signin-btn-container"
-              style={{ display: 'flex', justifyContent: 'center', minHeight: '44px' }}
-            ></div>
-          ) : (
-            <button 
-              type="button" 
-              className="btn-google-fallback"
-              onClick={handlePlaceholderClick}
-            >
-              <svg className="google-logo-svg" viewBox="0 0 24 24" width="18" height="18">
-                <path fill="#EA4335" d="M12 5.04c1.67 0 3.2.58 4.4 1.7l3.28-3.28C17.7 1.58 15 .75 12 .75 7.3.75 3.33 3.4 1.34 7.28l3.96 3.06C6.27 7.26 8.9 5.04 12 5.04z" />
-                <path fill="#4285F4" d="M23.45 12.3c0-.82-.07-1.6-.22-2.3H12v4.4h6.42c-.27 1.45-1.1 2.68-2.3 3.47l3.6 2.8c2.1-1.93 3.32-4.78 3.32-8.37z" />
-                <path fill="#FBBC05" d="M5.3 14.78c-.24-.72-.37-1.5-.37-2.3s.13-1.58.37-2.3L1.34 7.28C.48 9 0 10.95 0 13s.48 4 1.34 5.72l3.96-2.94z" />
-                <path fill="#34A853" d="M12 23.25c3.24 0 5.95-1.07 7.93-2.9l-3.6-2.8c-1.1.74-2.5 1.18-4.33 1.18-3.1 0-5.73-2.22-6.7-5.32L1.34 16.5C3.33 20.35 7.3 23.25 12 23.25z" />
-              </svg>
-              <span>Continue with Google</span>
-            </button>
-          )}
-        </div>
+            <form key={isLogin ? 'login' : 'signup'} onSubmit={handleSubmit} className="auth-form module-fade-in">
+              <div className="form-group">
+                <label>Username / Email</label>
+                <input 
+                  type="text" 
+                  name="username"
+                  value={formData.username} 
+                  onChange={handleChange} 
+                  placeholder="Enter username or email"
+                  required
+                  disabled={isSubmitting}
+                />
+              </div>
+              
+              <div className="form-group">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                  <label style={{ margin: 0 }}>Password</label>
+                  {isLogin && (
+                    <button 
+                      type="button" 
+                      className="auth-sub-link" 
+                      onClick={() => {
+                        setShowForgotPassword(true);
+                        setForgotStep(1);
+                        setForgotIdentifier(formData.username || '');
+                        setError('');
+                        setForgotError('');
+                        setForgotSuccess('');
+                      }}
+                    >
+                      Forgot password?
+                    </button>
+                  )}
+                </div>
+                <input 
+                  type="password" 
+                  name="password"
+                  value={formData.password} 
+                  onChange={handleChange} 
+                  placeholder="••••••••"
+                  required
+                  disabled={isSubmitting}
+                />
+              </div>
 
-        <div className="auth-footer">
-          <p className="text-dim">
-            {isLogin ? "Don't have an account? " : "Already have an account? "}
-            <span 
-              className="auth-link" 
-              onClick={() => { if (!isSubmitting) { setIsLogin(!isLogin); setError(''); } }}
-            >
-              {isLogin ? 'Sign Up' : 'Login'}
-            </span>
-          </p>
-        </div>
+              {!isLogin && (
+                <div className="form-group">
+                  <label>Confirm Password</label>
+                  <input 
+                    type="password" 
+                    name="confirmPassword"
+                    value={formData.confirmPassword} 
+                    onChange={handleChange} 
+                    placeholder="••••••••"
+                    required
+                    disabled={isSubmitting}
+                  />
+                </div>
+              )}
 
-        <div className="auth-legal-notice" style={{ textAlign: 'center', marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid rgba(255, 255, 255, 0.08)', fontSize: '0.75rem', color: '#889999' }}>
-          <p style={{ margin: 0, lineHeight: 1.5 }}>
-            By continuing, you agree to Aesthetic by Nikhil's{' '}
-            <Link to="/terms-of-service" style={{ color: 'var(--accent-gold)', textDecoration: 'underline' }}>Terms of Service</Link> and{' '}
-            <Link to="/privacy-policy" style={{ color: 'var(--accent-gold)', textDecoration: 'underline' }}>Privacy Policy</Link>.
-          </p>
-        </div>
+              {!isLogin && (
+                <div className="dpdp-consent-group" style={{ marginTop: '0.85rem', marginBottom: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.65rem', textAlign: 'left' }}>
+                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', cursor: 'pointer', fontSize: '0.78rem', color: '#c7cbd1', lineHeight: '1.4' }}>
+                    <input 
+                      type="checkbox" 
+                      checked={consentPolicy} 
+                      onChange={(e) => setConsentPolicy(e.target.checked)}
+                      style={{ marginTop: '3px', accentColor: 'var(--accent-gold)', width: '15px', height: '15px', flexShrink: 0 }}
+                    />
+                    <span>
+                      <strong style={{ color: '#fff' }}>[Required]</strong> I consent to Aesthetic by Nikhil processing my username and credentials in accordance with the{' '}
+                      <Link to="/privacy-policy" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-gold)', textDecoration: 'underline' }}>DPDP Privacy Notice</Link> and{' '}
+                      <Link to="/terms-of-service" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-gold)', textDecoration: 'underline' }}>Terms</Link>.
+                    </span>
+                  </label>
+
+                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', cursor: 'pointer', fontSize: '0.78rem', color: '#9aa0a6', lineHeight: '1.4' }}>
+                    <input 
+                      type="checkbox" 
+                      checked={consentMarketing} 
+                      onChange={(e) => setConsentMarketing(e.target.checked)}
+                      style={{ marginTop: '3px', accentColor: 'var(--accent-gold)', width: '15px', height: '15px', flexShrink: 0 }}
+                    />
+                    <span>
+                      <em>(Optional)</em> I consent to receiving atelier updates, anniversary sketch reminders, and studio preview invitations.
+                    </span>
+                  </label>
+                </div>
+              )}
+
+              {error && <p className="auth-error">{error}</p>}
+              
+              <button type="submit" className="btn-primary w-full mt-1" disabled={isSubmitting}>
+                {isSubmitting ? 'Processing...' : (isLogin ? 'Login' : 'Create Account')}
+              </button>
+            </form>
+
+            <div className="auth-divider">
+              <span>or</span>
+            </div>
+
+            <div className="google-auth-section">
+              <p style={{ textAlign: 'center', fontSize: '0.72rem', color: '#7a858e', marginBottom: '0.5rem', lineHeight: '1.35' }}>
+                🔒 <span>Identity verified securely under DPDP Act 2023. No access to contacts or personal files.</span>
+              </p>
+              {googleClientId ? (
+                <div 
+                  ref={googleBtnContainerRef} 
+                  id="google-signin-button" 
+                  className="google-signin-btn-container"
+                  style={{ display: 'flex', justifyContent: 'center', minHeight: '44px' }}
+                ></div>
+              ) : (
+                <button 
+                  type="button" 
+                  className="btn-google-fallback"
+                  onClick={handlePlaceholderClick}
+                >
+                  <svg className="google-logo-svg" viewBox="0 0 24 24" width="18" height="18">
+                    <path fill="#EA4335" d="M12 5.04c1.67 0 3.2.58 4.4 1.7l3.28-3.28C17.7 1.58 15 .75 12 .75 7.3.75 3.33 3.4 1.34 7.28l3.96 3.06C6.27 7.26 8.9 5.04 12 5.04z" />
+                    <path fill="#4285F4" d="M23.45 12.3c0-.82-.07-1.6-.22-2.3H12v4.4h6.42c-.27 1.45-1.1 2.68-2.3 3.47l3.6 2.8c2.1-1.93 3.32-4.78 3.32-8.37z" />
+                    <path fill="#FBBC05" d="M5.3 14.78c-.24-.72-.37-1.5-.37-2.3s.13-1.58.37-2.3L1.34 7.28C.48 9 0 10.95 0 13s.48 4 1.34 5.72l3.96-2.94z" />
+                    <path fill="#34A853" d="M12 23.25c3.24 0 5.95-1.07 7.93-2.9l-3.6-2.8c-1.1.74-2.5 1.18-4.33 1.18-3.1 0-5.73-2.22-6.7-5.32L1.34 16.5C3.33 20.35 7.3 23.25 12 23.25z" />
+                  </svg>
+                  <span>Continue with Google</span>
+                </button>
+              )}
+            </div>
+
+            <div className="auth-footer">
+              <p className="text-dim">
+                {isLogin ? "Don't have an account? " : "Already have an account? "}
+                <span 
+                  className="auth-link" 
+                  onClick={() => { if (!isSubmitting) { setIsLogin(!isLogin); setError(''); setSuccessMessage(''); } }}
+                >
+                  {isLogin ? 'Sign Up' : 'Login'}
+                </span>
+              </p>
+            </div>
+
+            <div className="auth-legal-notice" style={{ textAlign: 'center', marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid rgba(255, 255, 255, 0.08)', fontSize: '0.75rem', color: '#889999' }}>
+              <p style={{ margin: 0, lineHeight: 1.5 }}>
+                By continuing, you agree to Aesthetic by Nikhil's{' '}
+                <Link to="/terms-of-service" style={{ color: 'var(--accent-gold)', textDecoration: 'underline' }}>Terms of Service</Link> and{' '}
+                <Link to="/privacy-policy" style={{ color: 'var(--accent-gold)', textDecoration: 'underline' }}>Privacy Policy</Link>.
+              </p>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

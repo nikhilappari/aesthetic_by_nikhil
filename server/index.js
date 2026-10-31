@@ -1,3 +1,4 @@
+import nodemailer from 'nodemailer';
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -20,6 +21,35 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || 'art_website_secret_2026_key';
+
+// Transporter for Sending OTP & Security Notifications
+const sendEmail = async ({ to, subject, html, text }) => {
+  const emailUser = process.env.EMAIL_USER;
+  const emailPass = process.env.EMAIL_PASS || process.env.EMAIL_PASSWORD;
+
+  if (emailUser && emailPass) {
+    try {
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: { user: emailUser, pass: emailPass }
+      });
+      await transporter.sendMail({
+        from: `"Aesthetic by Nikhil" <${emailUser}>`,
+        to,
+        subject,
+        text,
+        html
+      });
+      console.log(`[EMAIL SENT] Successfully dispatched to: ${to}`);
+      return { sent: true };
+    } catch (err) {
+      console.error('[EMAIL ERROR] Failed to send via SMTP:', err.message);
+    }
+  } else {
+    console.log(`[EMAIL SIMULATION] To: ${to} | Subject: ${subject}`);
+  }
+  return { sent: false };
+};
 
 // Initialize Cloudinary if credentials exist
 const isCloudinaryConfigured = 
@@ -185,6 +215,210 @@ app.post('/api/auth/login', async (req, res) => {
 
 app.get('/api/auth/me', authenticateToken, async (req, res) => {
   return res.json({ user: req.user });
+});
+
+
+// Verify Admin 2FA OTP Code
+app.post('/api/auth/verify-admin-otp', async (req, res) => {
+  const { tempToken, otp } = req.body;
+  if (!tempToken || !otp) {
+    return res.status(400).json({ message: 'Temporary token and 6-digit OTP code are required.' });
+  }
+
+  try {
+    const decoded = jwt.verify(tempToken, JWT_SECRET);
+    if (!decoded || !decoded.isPendingOtp || decoded.role !== 'admin') {
+      return res.status(403).json({ message: 'Invalid or expired OTP session. Please log in again.' });
+    }
+
+    const db = await getDb();
+    const record = await db.get(
+      "SELECT * FROM otp_verifications WHERE identifier = ? AND otp_code = ? AND purpose = 'admin_login' AND used = 0 ORDER BY id DESC LIMIT 1",
+      [decoded.username, otp.trim()]
+    );
+
+    if (!record) {
+      return res.status(400).json({ message: 'Incorrect OTP verification code.' });
+    }
+
+    if (new Date(record.expires_at) < new Date()) {
+      return res.status(400).json({ message: 'OTP code has expired. Please request a new code.' });
+    }
+
+    // Mark OTP as consumed
+    await db.run("UPDATE otp_verifications SET used = 1 WHERE id = ?", [record.id]);
+
+    const now = new Date().toISOString();
+    try {
+      await db.run("UPDATE users SET last_login = ? WHERE id = ?", [now, decoded.id]);
+    } catch (e) {}
+
+    // Issue full session token
+    const fullPayload = { id: decoded.id, username: decoded.username, role: 'admin' };
+    const token = jwt.sign(fullPayload, JWT_SECRET, { expiresIn: '7d' });
+
+    return res.json({
+      success: true,
+      user: fullPayload,
+      token
+    });
+  } catch (error) {
+    console.error('OTP verification error:', error);
+    return res.status(403).json({ message: 'OTP session expired or invalid. Please re-enter your password.' });
+  }
+});
+
+// Resend Admin OTP Code
+app.post('/api/auth/resend-admin-otp', async (req, res) => {
+  const { tempToken } = req.body;
+  if (!tempToken) {
+    return res.status(400).json({ message: 'Session token required.' });
+  }
+
+  try {
+    const decoded = jwt.verify(tempToken, JWT_SECRET);
+    if (!decoded || !decoded.isPendingOtp || decoded.role !== 'admin') {
+      return res.status(403).json({ message: 'Invalid OTP session.' });
+    }
+
+    const db = await getDb();
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+    const now = new Date().toISOString();
+
+    await db.run(
+      "INSERT INTO otp_verifications (identifier, otp_code, purpose, expires_at, used, created_at) VALUES (?, ?, 'admin_login', ?, 0, ?)",
+      [decoded.username, otp, expiresAt, now]
+    );
+
+    const adminEmail = process.env.ADMIN_EMAIL || 'nikhilappari2006@gmail.com';
+    await sendEmail({
+      to: adminEmail,
+      subject: `Your New Admin Security OTP: ${otp}`,
+      text: `Your new Admin Authentication Code is ${otp}.`
+    });
+
+    return res.json({
+      success: true,
+      message: `A new verification code has been dispatched to ${adminEmail}.`,
+      devOtpCode: process.env.EMAIL_USER ? undefined : otp
+    });
+  } catch (error) {
+    return res.status(403).json({ message: 'Session expired. Please log in again.' });
+  }
+});
+
+// Forgot Password: Send 6-Digit Reset Code (Users & Admin)
+app.post('/api/auth/forgot-password', async (req, res) => {
+  const { identifier } = req.body;
+  if (!identifier) {
+    return res.status(400).json({ message: 'Please provide your registered username or email.' });
+  }
+
+  const cleanId = identifier.trim();
+
+  try {
+    const db = await getDb();
+    const user = await db.get(
+      "SELECT * FROM users WHERE username = ? OR username = ? OR (role = 'admin' AND ? LIKE '%nikhil%')",
+      [cleanId, cleanId.toLowerCase(), cleanId.toLowerCase()]
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: 'No registered account found with that username or email.' });
+    }
+
+    const resetOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 minutes
+    const now = new Date().toISOString();
+
+    await db.run(
+      "INSERT INTO otp_verifications (identifier, otp_code, purpose, expires_at, used, created_at) VALUES (?, ?, 'password_reset', ?, 0, ?)",
+      [user.username, resetOtp, expiresAt, now]
+    );
+
+    // Target email resolution
+    let targetEmail = user.username.includes('@') ? user.username : 'nikhilappari2006@gmail.com';
+    if (user.role === 'admin') {
+      targetEmail = 'nikhilappari2006@gmail.com';
+    }
+
+    await sendEmail({
+      to: targetEmail,
+      subject: `Your Password Reset Code: ${resetOtp} • Aesthetic by Nikhil`,
+      text: `Your password reset code is ${resetOtp}. It expires in 15 minutes.`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #0f1216; color: #f8fafc;">
+          <h2 style="color: #d4af37; margin-top: 0; font-family: serif;">Password Reset Request</h2>
+          <p style="font-size: 15px; color: #cbd5e1;">A password reset was requested for your <strong>${user.username}</strong> account.</p>
+          <div style="text-align: center; margin: 28px 0;">
+            <span style="display: inline-block; font-size: 32px; letter-spacing: 6px; font-weight: bold; color: #d4af37; background: rgba(212, 175, 55, 0.12); border: 1px dashed #d4af37; padding: 12px 24px; border-radius: 8px; font-family: monospace;">
+              ${resetOtp}
+            </span>
+          </div>
+          <p style="font-size: 13px; color: #94a3b8; line-height: 1.5;">Enter this 6-digit code on the reset screen to create a new password. If you didn't request this, you can safely ignore this email.</p>
+        </div>
+      `
+    });
+
+    console.log(`[PASSWORD RESET CODE] For ${user.username}: ${resetOtp} -> ${targetEmail}`);
+
+    return res.json({
+      success: true,
+      username: user.username,
+      message: `Reset verification code has been dispatched to ${targetEmail}.`,
+      emailHint: targetEmail.replace(/(.{2})(.*)(@.*)/, "$1***$3"),
+      devOtpCode: process.env.EMAIL_USER ? undefined : resetOtp
+    });
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    return res.status(500).json({ message: 'Failed to process password reset request.' });
+  }
+});
+
+// Reset Password: Validate OTP and update password
+app.post('/api/auth/reset-password', async (req, res) => {
+  const { username, otp, newPassword } = req.body;
+  if (!username || !otp || !newPassword) {
+    return res.status(400).json({ message: 'Username, 6-digit reset code, and new password are required.' });
+  }
+
+  if (newPassword.length < 6) {
+    return res.status(400).json({ message: 'New password must be at least 6 characters long.' });
+  }
+
+  try {
+    const db = await getDb();
+    const user = await db.get("SELECT * FROM users WHERE username = ?", [username.trim()]);
+    if (!user) {
+      return res.status(404).json({ message: 'User account not found.' });
+    }
+
+    const record = await db.get(
+      "SELECT * FROM otp_verifications WHERE identifier = ? AND otp_code = ? AND purpose = 'password_reset' AND used = 0 ORDER BY id DESC LIMIT 1",
+      [user.username, otp.trim()]
+    );
+
+    if (!record) {
+      return res.status(400).json({ message: 'Invalid or incorrect reset verification code.' });
+    }
+
+    if (new Date(record.expires_at) < new Date()) {
+      return res.status(400).json({ message: 'This reset code has expired. Please request a fresh code.' });
+    }
+
+    const newHash = await bcrypt.hash(newPassword, 10);
+    await db.run("UPDATE users SET password_hash = ? WHERE id = ?", [newHash, user.id]);
+    await db.run("UPDATE otp_verifications SET used = 1 WHERE id = ?", [record.id]);
+
+    return res.json({
+      success: true,
+      message: 'Password updated successfully! You can now log in with your new password.'
+    });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    return res.status(500).json({ message: 'Failed to reset password.' });
+  }
 });
 
 // Google Auth Client ID endpoint

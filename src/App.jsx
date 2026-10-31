@@ -342,6 +342,10 @@ function App() {
   const login = async (username, password) => {
     try {
       const data = await api.post('/api/auth/login', { username, password });
+      if (data?.requiresOtp) {
+        // Admin OTP verification required
+        return data;
+      }
       localStorage.setItem('token', data.token);
       localStorage.setItem('cached_user', JSON.stringify(data.user));
       setCurrentUser(data.user);
@@ -350,6 +354,12 @@ function App() {
       alert("Login Failed: " + e.message);
       return null;
     }
+  };
+
+  const finalizeLogin = (userData, token) => {
+    localStorage.setItem('token', token);
+    localStorage.setItem('cached_user', JSON.stringify(userData));
+    setCurrentUser(userData);
   };
 
   const signup = async (username, password) => {
@@ -395,7 +405,7 @@ function App() {
             <Route path="/" element={<HomePage transformation={transformation} pricing={pricing} addRequest={addRequest} user={currentUser} />} />
             <Route path="/gallery" element={<GalleryPage artworks={artworks} />} />
             <Route path="/artworks" element={<ArtworksPage artworks={artworks} />} />
-            <Route path="/auth" element={<AuthPage login={login} signup={signup} loginWithGoogle={loginWithGoogle} />} />
+            <Route path="/auth" element={<AuthPage login={login} signup={signup} loginWithGoogle={loginWithGoogle} finalizeLogin={finalizeLogin} />} />
             
             <Route path="/admin" element={
               <ProtectedRoute user={currentUser} allowedRoles={['admin']}>

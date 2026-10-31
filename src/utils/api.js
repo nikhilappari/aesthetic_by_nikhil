@@ -171,5 +171,33 @@ export const api = {
    */
   async getAdminUsers() {
     return this.get('/api/admin/users');
+  },
+
+  /**
+   * Verify Admin 2FA OTP code
+   */
+  async verifyAdminOtp(data) {
+    return this.post('/api/auth/verify-admin-otp', data);
+  },
+
+  /**
+   * Resend Admin 2FA OTP code
+   */
+  async resendAdminOtp(data) {
+    return this.post('/api/auth/resend-admin-otp', data);
+  },
+
+  /**
+   * Request 6-digit Password Reset code (Users & Admin)
+   */
+  async forgotPassword(data) {
+    return this.post('/api/auth/forgot-password', data);
+  },
+
+  /**
+   * Reset password with 6-digit verification code
+   */
+  async resetPassword(data) {
+    return this.post('/api/auth/reset-password', data);
   }
 };

@@ -197,3 +197,72 @@
 .btn-google-fallback:hover .google-logo-svg {
   transform: scale(1.1);
 }
+
+
+/* OTP & Password Reset Styling */
+.auth-success-alert {
+  color: #4ade80;
+  font-size: 0.85rem;
+  background: rgba(34, 197, 94, 0.12);
+  padding: 12px;
+  border-radius: 8px;
+  text-align: center;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  margin-bottom: 1.25rem;
+  line-height: 1.5;
+}
+
+.otp-box-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.otp-big-input {
+  width: 100%;
+  max-width: 280px;
+  text-align: center;
+  font-size: 2rem !important;
+  letter-spacing: 10px;
+  font-family: monospace !important;
+  font-weight: 700;
+  color: var(--accent-gold) !important;
+  border: 2px solid var(--accent-gold) !important;
+  background: rgba(212, 175, 55, 0.08) !important;
+  border-radius: 12px !important;
+  padding: 0.65rem !important;
+}
+
+.otp-big-input:focus {
+  outline: none;
+  box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+}
+
+.auth-sub-link {
+  font-size: 0.78rem;
+  color: var(--accent-gold);
+  text-decoration: underline;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  transition: opacity 0.2s;
+}
+
+.auth-sub-link:hover {
+  opacity: 0.8;
+}
+
+.dev-otp-badge {
+  display: inline-block;
+  padding: 6px 14px;
+  background: rgba(234, 179, 8, 0.15);
+  border: 1px dashed rgba(234, 179, 8, 0.5);
+  color: #facc15;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-family: monospace;
+  font-weight: 700;
+  margin: 0.75rem 0;
+}
