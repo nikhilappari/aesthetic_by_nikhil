@@ -16,14 +16,7 @@ const AuthPage = ({ login, signup, loginWithGoogle, finalizeLogin }) => {
   const [successMessage, setSuccessMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Admin 2FA OTP States
-  const [showAdminOtp, setShowAdminOtp] = useState(false);
-  const [adminTempToken, setAdminTempToken] = useState('');
-  const [adminOtpCode, setAdminOtpCode] = useState('');
-  const [adminEmailHint, setAdminEmailHint] = useState('nikhilappari2006@gmail.com');
-  const [adminDevOtp, setAdminDevOtp] = useState('');
-  const [adminOtpError, setAdminOtpError] = useState('');
-  const [adminOtpSuccess, setAdminOtpSuccess] = useState('');
+
 
   // Forgot Password States (Available for both Users & Admin)
   const [showForgotPassword, setShowForgotPassword] = useState(false);
@@ -83,7 +76,7 @@ const AuthPage = ({ login, signup, loginWithGoogle, finalizeLogin }) => {
 
   // Initialize and render Google Sign-In Button on both tabs
   useEffect(() => {
-    if (isGoogleScriptLoaded && googleClientId && googleBtnContainerRef.current && !showAdminOtp && !showForgotPassword) {
+    if (isGoogleScriptLoaded && googleClientId && googleBtnContainerRef.current && !showForgotPassword) {
       try {
         /* global google */
         if (window.google?.accounts?.id) {
@@ -112,7 +105,7 @@ const AuthPage = ({ login, signup, loginWithGoogle, finalizeLogin }) => {
         console.error("Google Sign-In button render failed:", err);
       }
     }
-  }, [isLogin, isGoogleScriptLoaded, googleClientId, showAdminOtp, showForgotPassword]);
+  }, [isLogin, isGoogleScriptLoaded, googleClientId, showForgotPassword]);
 
   const handleGoogleCredentialResponse = async (response) => {
     setError('');
@@ -155,21 +148,9 @@ const AuthPage = ({ login, signup, loginWithGoogle, finalizeLogin }) => {
     
     try {
       if (isLogin) {
-        const response = await login(formData.username, formData.password);
-        
-        // ADMIN ONLY: Intercept and trigger 2FA OTP verification
-        if (response?.requiresOtp) {
-          setAdminTempToken(response.tempToken);
-          setAdminEmailHint(response.emailHint || 'nikhilappari2006@gmail.com');
-          setAdminDevOtp(response.devOtpCode || '');
-          setShowAdminOtp(true);
-          setIsSubmitting(false);
-          return;
-        }
-
-        // REGULAR CUSTOMER LOGIN
-        if (response) {
-          if (response.role === 'admin') {
+        const user = await login(formData.username, formData.password);
+        if (user) {
+          if (user.role === 'admin') {
             navigate('/admin');
           } else {
             navigate('/');
@@ -223,56 +204,7 @@ const AuthPage = ({ login, signup, loginWithGoogle, finalizeLogin }) => {
     }
   };
 
-  // Admin 2FA Verification Handler
-  const handleVerifyAdminOtp = async (e) => {
-    e.preventDefault();
-    setAdminOtpError('');
-    setAdminOtpSuccess('');
 
-    if (!adminOtpCode.trim() || adminOtpCode.trim().length !== 6) {
-      setAdminOtpError('Please enter a valid 6-digit verification code.');
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const res = await api.verifyAdminOtp({
-        tempToken: adminTempToken,
-        otp: adminOtpCode.trim()
-      });
-
-      if (res?.success && res.user && res.token) {
-        if (finalizeLogin) {
-          finalizeLogin(res.user, res.token);
-        } else {
-          localStorage.setItem('token', res.token);
-          localStorage.setItem('cached_user', JSON.stringify(res.user));
-        }
-        navigate('/admin');
-      } else {
-        setAdminOtpError(res?.message || 'Verification failed. Please check the code.');
-      }
-    } catch (err) {
-      setAdminOtpError(err.message || 'OTP verification failed.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // Admin Resend OTP Handler
-  const handleResendAdminOtp = async () => {
-    setAdminOtpError('');
-    setAdminOtpSuccess('');
-    try {
-      const res = await api.resendAdminOtp({ tempToken: adminTempToken });
-      if (res?.success) {
-        setAdminOtpSuccess('New 6-digit verification code sent to your email!');
-        if (res.devOtpCode) setAdminDevOtp(res.devOtpCode);
-      }
-    } catch (err) {
-      setAdminOtpError(err.message || 'Failed to resend OTP.');
-    }
-  };
 
   // Forgot Password: Step 1 Request Code
   const handleRequestPasswordReset = async (e) => {
@@ -360,68 +292,7 @@ const AuthPage = ({ login, signup, loginWithGoogle, finalizeLogin }) => {
         {/* ===================================================================
             VIEW 1: ADMIN 2FA OTP VERIFICATION SCREEN (ONLY FOR ADMIN)
            =================================================================== */}
-        {showAdminOtp ? (
-          <div className="admin-otp-card module-fade-in">
-            <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-              <span style={{ fontSize: '2.5rem' }}>🛡️</span>
-              <h2 className="serif auth-title" style={{ marginTop: '0.5rem' }}>Admin Two-Factor Authentication</h2>
-              <p className="auth-subtitle" style={{ marginBottom: '1rem' }}>
-                For artist console security, a 6-digit one-time code was sent to:
-                <br />
-                <strong style={{ color: 'var(--accent-gold)' }}>nikhilappari2006@gmail.com</strong>
-              </p>
-              {adminDevOtp && (
-                <div className="dev-otp-badge">
-                  Auto-fill Code: <strong>{adminDevOtp}</strong>
-                </div>
-              )}
-            </div>
-
-            {adminOtpError && <p className="auth-error">{adminOtpError}</p>}
-            {adminOtpSuccess && <p className="auth-success-alert">{adminOtpSuccess}</p>}
-
-            <form onSubmit={handleVerifyAdminOtp} className="auth-form">
-              <div className="otp-box-container">
-                <input 
-                  type="text" 
-                  maxLength="6"
-                  placeholder="••••••"
-                  className="otp-big-input"
-                  value={adminOtpCode}
-                  onChange={(e) => setAdminOtpCode(e.target.value.replace(/\D/g, ''))}
-                  autoFocus
-                  required
-                  disabled={isSubmitting}
-                />
-                <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-                  Code valid for 10 minutes
-                </span>
-              </div>
-
-              <button type="submit" className="btn-primary w-full mt-1" disabled={isSubmitting}>
-                {isSubmitting ? 'Verifying Admin Security Code...' : 'Verify & Enter Admin Console'}
-              </button>
-            </form>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '1.75rem', fontSize: '0.82rem' }}>
-              <button 
-                type="button" 
-                className="auth-sub-link" 
-                onClick={handleResendAdminOtp}
-                disabled={isSubmitting}
-              >
-                Resend Code
-              </button>
-              <button 
-                type="button" 
-                className="auth-sub-link" 
-                onClick={() => { setShowAdminOtp(false); setAdminOtpCode(''); setError(''); }}
-              >
-                Cancel & Back to Login
-              </button>
-            </div>
-          </div>
-        ) : showForgotPassword ? (
+        {showForgotPassword ? (
           <div className="forgot-password-card module-fade-in">
             <h2 className="serif auth-title">Reset Password</h2>
             <p className="auth-subtitle">

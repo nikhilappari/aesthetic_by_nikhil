@@ -342,10 +342,6 @@ function App() {
   const login = async (username, password) => {
     try {
       const data = await api.post('/api/auth/login', { username, password });
-      if (data?.requiresOtp) {
-        // Admin OTP verification required
-        return data;
-      }
       localStorage.setItem('token', data.token);
       localStorage.setItem('cached_user', JSON.stringify(data.user));
       setCurrentUser(data.user);
