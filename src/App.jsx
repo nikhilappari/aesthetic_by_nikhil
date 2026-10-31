@@ -8,6 +8,7 @@ import AdminPage from './pages/AdminPage';
 import AuthPage from './pages/AuthPage';
 import OrderPage from './pages/OrderPage';
 import LegalPage from './pages/LegalPage';
+import DataRightsPage from './pages/DataRightsPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import Footer from './components/Footer';
 import SocialButtons from './components/SocialButtons';
@@ -385,6 +386,8 @@ function App() {
             <Route path="/terms-of-service" element={<LegalPage initialTab="terms" />} />
             <Route path="/terms" element={<LegalPage initialTab="terms" />} />
             <Route path="/shipping-policy" element={<LegalPage initialTab="shipping" />} />
+            <Route path="/data-rights" element={<DataRightsPage />} />
+            <Route path="/rights-request" element={<DataRightsPage />} />
           </Routes>
         </main>
         <SocialButtons />

@@ -112,5 +112,38 @@ export const api = {
    */
   async loginWithGoogle(credential) {
     return this.post('/api/auth/google', { credential });
+  },
+
+  /**
+   * Record explicit consent record in compliance with DPDP Act (India) 2023 Section 6.
+   */
+  async recordConsent(data) {
+    try {
+      return await this.post('/api/consent', data);
+    } catch (e) {
+      console.warn('Consent recording failed non-fatally:', e);
+      return { success: false };
+    }
+  },
+
+  /**
+   * Submit a statutory Data Principal Rights request (DPDP Act Sections 11, 12, 13).
+   */
+  async submitDataRightsRequest(data) {
+    return this.post('/api/data-rights', data);
+  },
+
+  /**
+   * Fetch all Data Principal Rights requests (Admin only).
+   */
+  async getDataRightsRequests() {
+    return this.get('/api/data-rights');
+  },
+
+  /**
+   * Update status/admin notes of a Data Principal Rights request (Admin only).
+   */
+  async updateDataRightsRequest(id, data) {
+    return this.put(`/api/data-rights/${id}`, data);
   }
 };

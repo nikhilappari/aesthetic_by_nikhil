@@ -581,6 +581,159 @@ app.put('/api/requests/:id', authenticateToken, async (req, res) => {
   }
 });
 
+/* ==================== DPDP ACT (INDIA) 2023 COMPLIANCE APIS ==================== */
+
+// 7. Consent Audit Trail API (Section 6 DPDP Act 2023)
+app.post('/api/consent', async (req, res) => {
+  const { identifier, purpose, consented, notice_version } = req.body;
+  if (!identifier || !purpose) {
+    return res.status(400).json({ message: 'Identifier (email/username) and purpose are required.' });
+  }
+
+  // Extract client IP and User Agent for consent proof
+  const ip = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown';
+  const userAgent = req.headers['user-agent'] || 'unknown';
+  const timestamp = new Date().toISOString();
+  const consentFlag = consented !== false ? 1 : 0;
+  const version = notice_version || '2026.1-DPDP';
+
+  let userId = null;
+  // Optional auth token check to link user_id if logged in
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET);
+      userId = decoded?.id || null;
+    } catch (e) {
+      // Unauthenticated consent (e.g. initial registration) is still valid
+    }
+  }
+
+  try {
+    const db = await getDb();
+    await db.run(
+      `INSERT INTO consent_records (user_id, identifier, purpose, consented, notice_version, ip_address, user_agent, timestamp)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [userId, identifier, purpose, consentFlag, version, ip, userAgent, timestamp]
+    );
+
+    return res.status(201).json({
+      success: true,
+      message: 'Consent recorded successfully in compliance with DPDP Act Section 6.',
+      recordedAt: timestamp
+    });
+  } catch (error) {
+    console.error('Consent recording error:', error);
+    return res.status(500).json({ message: 'Failed to record consent record.' });
+  }
+});
+
+// Get user consent history
+app.get('/api/consent/my', authenticateToken, async (req, res) => {
+  try {
+    const db = await getDb();
+    const records = await db.all(
+      "SELECT id, purpose, consented, notice_version, timestamp FROM consent_records WHERE identifier = ? OR user_id = ? ORDER BY timestamp DESC",
+      [req.user.username, req.user.id]
+    );
+    return res.json(records);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: 'Failed to fetch consent records.' });
+  }
+});
+
+// 8. Data Principal Rights Request API (Sections 11, 12, 13 DPDP Act 2023)
+app.post('/api/data-rights', async (req, res) => {
+  const { name, email, request_type, details } = req.body;
+  if (!name || !email || !request_type || !details) {
+    return res.status(400).json({ message: 'Name, email, request type, and details are required.' });
+  }
+
+  const validTypes = ['access', 'correction', 'erasure', 'withdrawal', 'grievance'];
+  if (!validTypes.includes(request_type.toLowerCase())) {
+    return res.status(400).json({ 
+      message: `Invalid request type. Must be one of: ${validTypes.join(', ')}` 
+    });
+  }
+
+  const id = `DRR-${Math.floor(100000 + Math.random() * 900000)}`;
+  const now = new Date().toISOString();
+
+  let userId = null;
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET);
+      userId = decoded?.id || null;
+    } catch (e) {}
+  }
+
+  try {
+    const db = await getDb();
+    await db.run(
+      `INSERT INTO data_rights_requests (id, user_id, name, email, request_type, details, status, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, 'Pending', ?, ?)`,
+      [id, userId, name.trim(), email.trim().toLowerCase(), request_type.toLowerCase(), details.trim(), now, now]
+    );
+
+    return res.status(201).json({
+      success: true,
+      trackingId: id,
+      message: 'Your Data Principal Rights request has been registered under the DPDP Act 2023.',
+      statutoryTimeline: '30 calendar days for resolution. Grievance officer acknowledgement within 48 hours.',
+      grievanceOfficer: {
+        name: 'Nikhil Appari',
+        email: 'nikhilappari2006@gmail.com',
+        phone: '+91 98491 17467'
+      }
+    });
+  } catch (error) {
+    console.error('Data rights request error:', error);
+    return res.status(500).json({ message: 'Failed to register Data Principal Rights request.' });
+  }
+});
+
+// Admin: View all Data Principal Rights Requests
+app.get('/api/data-rights', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const db = await getDb();
+    const requests = await db.all("SELECT * FROM data_rights_requests ORDER BY created_at DESC");
+    return res.json(requests);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: 'Failed to fetch data rights requests.' });
+  }
+});
+
+// Admin: Update status of a Data Principal Rights Request
+app.put('/api/data-rights/:id', authenticateToken, requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { status, admin_notes } = req.body;
+  const now = new Date().toISOString();
+
+  try {
+    const db = await getDb();
+    const existing = await db.get("SELECT * FROM data_rights_requests WHERE id = ?", [id]);
+    if (!existing) {
+      return res.status(404).json({ message: 'Request not found.' });
+    }
+
+    await db.run(
+      "UPDATE data_rights_requests SET status = ?, admin_notes = ?, updated_at = ? WHERE id = ?",
+      [status || existing.status, admin_notes !== undefined ? admin_notes : existing.admin_notes, now, id]
+    );
+
+    const updated = await db.get("SELECT * FROM data_rights_requests WHERE id = ?", [id]);
+    return res.json(updated);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: 'Failed to update request.' });
+  }
+});
+
 /* ======================================================= */
 
 // Start Server

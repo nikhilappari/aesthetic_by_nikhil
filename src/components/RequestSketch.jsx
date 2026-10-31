@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import './RequestSketch.css';
 import { api } from '../utils/api';
 import { uploadToCloudinary } from '../utils/cloudinary';
@@ -14,6 +14,8 @@ const RequestSketch = ({ pricing, addRequest, user }) => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [consentProcessing, setConsentProcessing] = useState(false);
+  const [consentPortfolio, setConsentPortfolio] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -280,6 +282,36 @@ const RequestSketch = ({ pricing, addRequest, user }) => {
                   </div>
                 )}
               </div>
+            </div>
+
+            <div className="dpdp-sketch-consent" style={{ marginTop: '1.25rem', marginBottom: '1.25rem', padding: '1rem', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', flexDirection: 'column', gap: '0.75rem', textAlign: 'left' }}>
+              <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--accent-gold)', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                🛡️ DPDP Act (India) Privacy & Photo Consent
+              </div>
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', cursor: 'pointer', fontSize: '0.8rem', color: '#c7cbd1', lineHeight: '1.4' }}>
+                <input 
+                  type="checkbox" 
+                  checked={consentProcessing} 
+                  onChange={(e) => setConsentProcessing(e.target.checked)}
+                  style={{ marginTop: '3px', accentColor: 'var(--accent-gold)', width: '15px', height: '15px', flexShrink: 0 }}
+                />
+                <span>
+                  <strong style={{ color: '#fff' }}>[Required]</strong> I consent to the processing and cloud storage of my uploaded reference photo(s) solely for the creation and delivery of this commissioned sketch, per the{' '}
+                  <Link to="/privacy-policy" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-gold)', textDecoration: 'underline' }}>DPDP Privacy Notice</Link>.
+                </span>
+              </label>
+
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', cursor: 'pointer', fontSize: '0.8rem', color: '#9aa0a6', lineHeight: '1.4' }}>
+                <input 
+                  type="checkbox" 
+                  checked={consentPortfolio} 
+                  onChange={(e) => setConsentPortfolio(e.target.checked)}
+                  style={{ marginTop: '3px', accentColor: 'var(--accent-gold)', width: '15px', height: '15px', flexShrink: 0 }}
+                />
+                <span>
+                  <em>(Optional)</em> I consent to Aesthetic by Nikhil photographing the completed physical artwork for studio portfolio exhibition. (Leave unchecked for strict private non-disclosure).
+                </span>
+              </label>
             </div>
 
             <button type="button" className="btn-primary w-full" onClick={handleSubmit} disabled={isSubmitting}>

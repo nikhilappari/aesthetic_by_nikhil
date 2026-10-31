@@ -63,7 +63,7 @@ class DatabaseWrapper {
     if (this.isPg) {
       let sqlToRun = convertSql(sql);
       const upper = sqlToRun.toUpperCase();
-      if (upper.startsWith('INSERT') && (upper.includes('USERS') || upper.includes('ARTWORKS') || upper.includes('CLIENT_REQUESTS')) && !upper.includes('RETURNING')) {
+      if (upper.startsWith('INSERT') && (upper.includes('USERS') || upper.includes('ARTWORKS') || (upper.includes('CLIENT_REQUESTS') || upper.includes('CONSENT_RECORDS') || upper.includes('DATA_RIGHTS_REQUESTS'))) && !upper.includes('RETURNING')) {
         sqlToRun += ' RETURNING id';
       }
       const res = await this.client.query(sqlToRun, params);
@@ -210,6 +210,37 @@ export async function initDb() {
   } catch (e) {
     // Column already exists, safe to ignore
   }
+
+  // Create Consent Audit Records Table (DPDP Act 2023 Section 6 Compliance)
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS consent_records (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      identifier TEXT NOT NULL,
+      purpose TEXT NOT NULL,
+      consented INTEGER NOT NULL DEFAULT 1,
+      notice_version TEXT NOT NULL DEFAULT '2026.1-DPDP',
+      ip_address TEXT,
+      user_agent TEXT,
+      timestamp TEXT NOT NULL
+    )
+  `);
+
+  // Create Data Principal Rights Requests Table (DPDP Act 2023 Sections 11, 12, 13)
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS data_rights_requests (
+      id TEXT PRIMARY KEY,
+      user_id INTEGER,
+      name TEXT NOT NULL,
+      email TEXT NOT NULL,
+      request_type TEXT NOT NULL,
+      details TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'Pending',
+      admin_notes TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )
+  `);
 
   // Clean up old default 'admin' user if present
   await db.run("DELETE FROM users WHERE username = ?", ["admin"]);

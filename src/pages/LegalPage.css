@@ -252,3 +252,82 @@
     font-size: 0.78rem;
   }
 }
+
+
+/* DPDP Act 2023 Specific Styling */
+.lawyer-review-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(234, 179, 8, 0.12);
+  border: 1px solid rgba(234, 179, 8, 0.4);
+  color: #facc15;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 4px;
+  margin-left: 0.75rem;
+  vertical-align: middle;
+}
+
+.dpdp-table-container {
+  overflow-x: auto;
+  margin: 1.5rem 0;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dpdp-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  text-align: left;
+}
+
+.dpdp-table th {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--accent-gold);
+  padding: 12px 14px;
+  font-weight: 600;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  white-space: nowrap;
+}
+
+.dpdp-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  color: #cbd5e1;
+  vertical-align: top;
+  line-height: 1.5;
+}
+
+.dpdp-table tr:hover td {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.rights-cta-box {
+  background: rgba(212, 175, 55, 0.08);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 10px;
+  padding: 1.5rem;
+  margin: 1.75rem 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.rights-cta-text h4 {
+  color: #fff;
+  font-size: 1.15rem;
+  margin: 0 0 0.35rem 0;
+}
+
+.rights-cta-text p {
+  color: #cbd5e1;
+  font-size: 0.88rem;
+  margin: 0;
+}

@@ -5,6 +5,8 @@ import './AuthPage.css';
 
 const AuthPage = ({ login, signup, loginWithGoogle }) => {
   const [isLogin, setIsLogin] = useState(true);
+  const [consentPolicy, setConsentPolicy] = useState(false);
+  const [consentMarketing, setConsentMarketing] = useState(false);
   const [formData, setFormData] = useState({
     username: '',
     password: '',
@@ -97,6 +99,12 @@ const AuthPage = ({ login, signup, loginWithGoogle }) => {
     try {
       const user = await loginWithGoogle(response.credential);
       if (user) {
+        api.recordConsent({
+          identifier: user.username || 'google_user',
+          purpose: 'google_oauth_dpdp',
+          consented: true,
+          notice_version: '2026.1-DPDP'
+        });
         if (user.role === 'admin') {
           navigate('/admin');
         } else {
@@ -146,8 +154,29 @@ const AuthPage = ({ login, signup, loginWithGoogle }) => {
           return;
         }
         
+        if (!consentPolicy) {
+          setError('Under Section 6 of the DPDP Act (India), explicit consent to our Privacy Notice is required to establish an atelier account.');
+          setIsSubmitting(false);
+          return;
+        }
+
         const result = await signup(formData.username, formData.password);
         if (result.success) {
+          // Record explicit consent per DPDP Act Section 6
+          api.recordConsent({
+            identifier: formData.username,
+            purpose: 'account_creation_dpdp',
+            consented: true,
+            notice_version: '2026.1-DPDP'
+          });
+          if (consentMarketing) {
+            api.recordConsent({
+              identifier: formData.username,
+              purpose: 'marketing_communications',
+              consented: true,
+              notice_version: '2026.1-DPDP'
+            });
+          }
           navigate('/');
         } else {
           setError(result.message);
@@ -235,6 +264,36 @@ const AuthPage = ({ login, signup, loginWithGoogle }) => {
             </div>
           )}
 
+          {!isLogin && (
+            <div className="dpdp-consent-group" style={{ marginTop: '0.85rem', marginBottom: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.65rem', textAlign: 'left' }}>
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', cursor: 'pointer', fontSize: '0.78rem', color: '#c7cbd1', lineHeight: '1.4' }}>
+                <input 
+                  type="checkbox" 
+                  checked={consentPolicy} 
+                  onChange={(e) => setConsentPolicy(e.target.checked)}
+                  style={{ marginTop: '3px', accentColor: 'var(--accent-gold)', width: '15px', height: '15px', flexShrink: 0 }}
+                />
+                <span>
+                  <strong style={{ color: '#fff' }}>[Required]</strong> I consent to Aesthetic by Nikhil processing my username and credentials in accordance with the{' '}
+                  <Link to="/privacy-policy" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-gold)', textDecoration: 'underline' }}>DPDP Privacy Notice</Link> and{' '}
+                  <Link to="/terms-of-service" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-gold)', textDecoration: 'underline' }}>Terms</Link>.
+                </span>
+              </label>
+
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', cursor: 'pointer', fontSize: '0.78rem', color: '#9aa0a6', lineHeight: '1.4' }}>
+                <input 
+                  type="checkbox" 
+                  checked={consentMarketing} 
+                  onChange={(e) => setConsentMarketing(e.target.checked)}
+                  style={{ marginTop: '3px', accentColor: 'var(--accent-gold)', width: '15px', height: '15px', flexShrink: 0 }}
+                />
+                <span>
+                  <em>(Optional)</em> I consent to receiving atelier updates, anniversary sketch reminders, and studio preview invitations.
+                </span>
+              </label>
+            </div>
+          )}
+
           {error && <p className="auth-error">{error}</p>}
           
           <button type="submit" className="btn-primary w-full mt-1" disabled={isSubmitting}>
@@ -247,6 +306,9 @@ const AuthPage = ({ login, signup, loginWithGoogle }) => {
         </div>
 
         <div className="google-auth-section">
+          <p style={{ textAlign: 'center', fontSize: '0.72rem', color: '#7a858e', marginBottom: '0.5rem', lineHeight: '1.35' }}>
+            🔒 <span>Identity verified securely under DPDP Act 2023. No access to contacts or personal files.</span>
+          </p>
           {googleClientId ? (
             <div 
               ref={googleBtnContainerRef} 
