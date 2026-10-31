@@ -24,7 +24,7 @@ export const api = {
   /**
    * Send a GET request to the backend.
    */
-  async get(url, timeoutMs = 15000) {
+  async get(url, timeoutMs = 60000) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {

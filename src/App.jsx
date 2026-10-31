@@ -21,15 +21,15 @@ const defaultTransformation = {
 };
 
 const defaultPricing = {
-  charcoalA4: '1500',
-  charcoalA3: '2500',
-  charcoalCouple: '3500',
-  graphiteA4: '1500',
-  graphiteA3: '2500',
-  graphiteCouple: '3500',
-  colorA4: '2200',
-  colorA3: '3200',
-  colorCouple: '4500',
+  charcoalA4: '1000',
+  charcoalA3: '1500',
+  charcoalCouple: '2500',
+  graphiteA4: '1000',
+  graphiteA3: '1500',
+  graphiteCouple: '2500',
+  colorA4: '1500',
+  colorA3: '2000',
+  colorCouple: '3500',
   frameA4Normal: '300',
   frameA4Premium: '500',
   frameA3Normal: '500',
@@ -126,6 +126,19 @@ function App() {
         if (artworksRes.status === 'fulfilled' && Array.isArray(artworksRes.value) && artworksRes.value.length > 0) {
           setArtworks(artworksRes.value);
           localStorage.setItem('cached_artworks', JSON.stringify(artworksRes.value));
+        } else if (artworksRes.status !== 'fulfilled') {
+          // If backend was waking up from cold-start, retry quietly in background
+          setTimeout(async () => {
+            try {
+              const retryData = await api.get('/api/artworks');
+              if (Array.isArray(retryData) && retryData.length > 0) {
+                setArtworks(retryData);
+                localStorage.setItem('cached_artworks', JSON.stringify(retryData));
+              }
+            } catch (retryErr) {
+              console.warn("Artworks background retry:", retryErr.message);
+            }
+          }, 5000);
         }
 
         if (transRes.status === 'fulfilled' && transRes.value?.before) {
