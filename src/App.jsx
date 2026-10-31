@@ -7,9 +7,11 @@ import ArtworksPage from './pages/ArtworksPage';
 import AdminPage from './pages/AdminPage';
 import AuthPage from './pages/AuthPage';
 import OrderPage from './pages/OrderPage';
+import LegalPage from './pages/LegalPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import Footer from './components/Footer';
 import SocialButtons from './components/SocialButtons';
+import CookieConsent from './components/CookieConsent';
 import { api } from './utils/api';
 import { artworks as defaultArtworks } from './data/artworks';
 
@@ -376,10 +378,18 @@ function App() {
             } />
 
             <Route path="/order" element={<OrderPage user={currentUser} pricing={pricing} addRequest={addRequest} clientRequests={clientRequests} updateRequest={updateRequest} />} />
+            
+            {/* Legal & Compliance Routes */}
+            <Route path="/privacy-policy" element={<LegalPage initialTab="privacy" />} />
+            <Route path="/privacy" element={<LegalPage initialTab="privacy" />} />
+            <Route path="/terms-of-service" element={<LegalPage initialTab="terms" />} />
+            <Route path="/terms" element={<LegalPage initialTab="terms" />} />
+            <Route path="/shipping-policy" element={<LegalPage initialTab="shipping" />} />
           </Routes>
         </main>
         <SocialButtons />
         <Footer />
+        <CookieConsent />
       </div>
     </Router>
   );

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { api } from '../utils/api';
 import './AuthPage.css';
 
@@ -280,6 +280,14 @@ const AuthPage = ({ login, signup, loginWithGoogle }) => {
             >
               {isLogin ? 'Sign Up' : 'Login'}
             </span>
+          </p>
+        </div>
+
+        <div className="auth-legal-notice" style={{ textAlign: 'center', marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid rgba(255, 255, 255, 0.08)', fontSize: '0.75rem', color: '#889999' }}>
+          <p style={{ margin: 0, lineHeight: 1.5 }}>
+            By continuing, you agree to Aesthetic by Nikhil's{' '}
+            <Link to="/terms-of-service" style={{ color: 'var(--accent-gold)', textDecoration: 'underline' }}>Terms of Service</Link> and{' '}
+            <Link to="/privacy-policy" style={{ color: 'var(--accent-gold)', textDecoration: 'underline' }}>Privacy Policy</Link>.
           </p>
         </div>
       </div>
