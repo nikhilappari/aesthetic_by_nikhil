@@ -30,11 +30,19 @@ const sendEmail = async ({ to, subject, html, text }) => {
   if (emailUser && emailPass) {
     try {
       const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: { user: emailUser.trim(), pass: emailPass.replace(/\s+/g, '') }
+        host: 'smtp.gmail.com',
+        port: 465,
+        secure: true,
+        auth: { 
+          user: emailUser.trim(), 
+          pass: emailPass.replace(/\s+/g, '') 
+        },
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 15000
       });
       await transporter.sendMail({
-        from: `"Aesthetic by Nikhil" <${emailUser}>`,
+        from: `"Aesthetic by Nikhil" <${emailUser.trim()}>`,
         to,
         subject,
         text,
@@ -44,11 +52,12 @@ const sendEmail = async ({ to, subject, html, text }) => {
       return { sent: true };
     } catch (err) {
       console.error('[EMAIL ERROR] Failed to send via SMTP:', err.message);
+      return { sent: false, error: err.message };
     }
   } else {
     console.log(`[EMAIL SIMULATION] To: ${to} | Subject: ${subject}`);
+    return { sent: false, simulated: true };
   }
-  return { sent: false };
 };
 
 // Initialize Cloudinary if credentials exist
