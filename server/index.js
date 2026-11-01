@@ -307,7 +307,6 @@ app.post('/api/auth/resend-admin-otp', async (req, res) => {
     return res.json({
       success: true,
       message: `A new verification code has been dispatched to ${adminEmail}.`,
-      devOtpCode: process.env.EMAIL_USER ? undefined : otp
     });
   } catch (error) {
     return res.status(403).json({ message: 'Session expired. Please log in again.' });
@@ -343,10 +342,19 @@ app.post('/api/auth/forgot-password', async (req, res) => {
       [user.username, resetOtp, expiresAt, now]
     );
 
-    // Target email resolution
+        // Target email resolution
     let targetEmail = user.username.includes('@') ? user.username : 'nikhilappari2006@gmail.com';
     if (user.role === 'admin') {
       targetEmail = 'nikhilappari2006@gmail.com';
+    }
+
+    const emailUser = process.env.EMAIL_USER;
+    const emailPass = process.env.EMAIL_PASS || process.env.EMAIL_PASSWORD;
+
+    if (!emailUser || !emailPass) {
+      return res.status(503).json({
+        message: 'Email delivery is not configured on the server yet. Please add EMAIL_USER and EMAIL_PASS (Gmail App Password) in your Render dashboard environment variables.'
+      });
     }
 
     await sendEmail({
@@ -374,7 +382,6 @@ app.post('/api/auth/forgot-password', async (req, res) => {
       username: user.username,
       message: `Reset verification code has been dispatched to ${targetEmail}.`,
       emailHint: targetEmail.replace(/(.{2})(.*)(@.*)/, "$1***$3"),
-      devOtpCode: process.env.EMAIL_USER ? undefined : resetOtp
     });
   } catch (error) {
     console.error('Forgot password error:', error);

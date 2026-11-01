@@ -27,7 +27,6 @@ const AuthPage = ({ login, signup, loginWithGoogle, finalizeLogin }) => {
   const [forgotNewPassword, setForgotNewPassword] = useState('');
   const [forgotConfirmPassword, setForgotConfirmPassword] = useState('');
   const [forgotEmailHint, setForgotEmailHint] = useState('');
-  const [forgotDevOtp, setForgotDevOtp] = useState('');
   const [forgotError, setForgotError] = useState('');
   const [forgotSuccess, setForgotSuccess] = useState('');
   
@@ -223,7 +222,6 @@ const AuthPage = ({ login, signup, loginWithGoogle, finalizeLogin }) => {
       if (res?.success) {
         setForgotTargetUsername(res.username);
         setForgotEmailHint(res.emailHint || 'your registered email');
-        setForgotDevOtp(res.devOtpCode || '');
         setForgotStep(2);
         setForgotSuccess(`Verification code dispatched to ${res.emailHint || 'your email'}.`);
       } else {
@@ -303,11 +301,7 @@ const AuthPage = ({ login, signup, loginWithGoogle, finalizeLogin }) => {
 
             {forgotError && <p className="auth-error">{forgotError}</p>}
             {forgotSuccess && <p className="auth-success-alert">{forgotSuccess}</p>}
-            {forgotDevOtp && forgotStep === 2 && (
-              <div style={{ textAlign: 'center' }}>
-                <span className="dev-otp-badge">Reset Code: {forgotDevOtp}</span>
-              </div>
-            )}
+            
 
             {forgotStep === 1 ? (
               <form onSubmit={handleRequestPasswordReset} className="auth-form">
