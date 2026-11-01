@@ -3,14 +3,14 @@ import './About.css';
 
 const ABOUT_IMAGES = [
   {
-    src: '/artist_workspace.png',
+    src: '/artist_workspace.jpg',
     alt: "Nikhil Appari's Masterworks & Studio",
     tag: 'THE ART',
     theme: 'atelier',
     objectPosition: 'center 43%'
   },
   {
-    src: '/nikhil_portrait.png',
+    src: '/nikhil_portrait.jpg',
     alt: 'Nikhil Appari - Portrait Artist',
     tag: 'THE ARTIST',
     theme: 'artist',
@@ -21,16 +21,11 @@ const ABOUT_IMAGES = [
 const About = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
-  const [transitionKey, setTransitionKey] = useState(0);
 
   useEffect(() => {
     if (isPaused) return;
     const interval = setInterval(() => {
-      setCurrentIndex((prev) => {
-        const next = (prev + 1) % ABOUT_IMAGES.length;
-        setTransitionKey((k) => k + 1);
-        return next;
-      });
+      setCurrentIndex((prev) => (prev + 1) % ABOUT_IMAGES.length);
     }, 2000);
 
     return () => clearInterval(interval);
@@ -52,28 +47,22 @@ const About = () => {
             <div className="about-ambient-particles"></div>
 
             <div className="about-image-frame">
-              {/* Golden gallery sheen sweep across frame on transition */}
-              <div key={transitionKey} className="about-gallery-sheen"></div>
-
-              {/* Dainty top-right corner micro-tag */}
+              {/* Dainty top-left corner micro-tag */}
               <div className="about-micro-tag">
                 <span className="micro-tag-dot"></span>
                 <span>{currentItem.tag}</span>
               </div>
 
               {ABOUT_IMAGES.map((img, idx) => (
-                <div
+                <img
                   key={img.src}
-                  className={`about-image-layer ${idx === currentIndex ? 'active' : ''}`}
-                >
-                  <img
-                    src={img.src}
-                    alt={img.alt}
-                    style={{ objectPosition: img.objectPosition }}
-                    className="about-image"
-                  />
-                  <div className="about-vignette-overlay"></div>
-                </div>
+                  src={img.src}
+                  alt={img.alt}
+                  style={{ objectPosition: img.objectPosition }}
+                  className={`about-image ${idx === currentIndex ? 'active' : ''}`}
+                  loading="eager"
+                  decoding="async"
+                />
               ))}
             </div>
 
