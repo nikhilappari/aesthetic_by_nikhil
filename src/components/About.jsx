@@ -5,16 +5,14 @@ const ABOUT_IMAGES = [
   {
     src: '/artist_workspace.png',
     alt: "Nikhil Appari's Masterworks & Studio",
-    label: 'Sketches',
-    tag: 'THE ATELIER • 01',
+    tag: 'THE ART',
     theme: 'atelier',
     objectPosition: 'center 43%'
   },
   {
     src: '/nikhil_portrait.png',
     alt: 'Nikhil Appari - Portrait Artist',
-    label: 'The Artist',
-    tag: 'NIKHIL APPARI • 02',
+    tag: 'THE ARTIST',
     theme: 'artist',
     objectPosition: 'center center'
   }
@@ -56,6 +54,12 @@ const About = () => {
             <div className="about-image-frame">
               {/* Golden gallery sheen sweep across frame on transition */}
               <div key={transitionKey} className="about-gallery-sheen"></div>
+
+              {/* Dainty top-right corner micro-tag */}
+              <div className="about-micro-tag">
+                <span className="micro-tag-dot"></span>
+                <span>{currentItem.tag}</span>
+              </div>
 
               {ABOUT_IMAGES.map((img, idx) => (
                 <div

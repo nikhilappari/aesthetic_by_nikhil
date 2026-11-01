@@ -119,43 +119,37 @@
   }
 }
 
-/* Minimalist floating archive tag */
-.about-frame-tag {
+/* Minimalist micro tag at top right corner */
+.about-micro-tag {
   position: absolute;
-  top: 14px;
-  left: 14px;
-  z-index: 8;
+  top: 12px;
+  right: 12px;
+  z-index: 10;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  background: rgba(9, 13, 17, 0.78);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  gap: 5px;
+  background: rgba(10, 14, 18, 0.72);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(212, 175, 55, 0.35);
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 0.68rem;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 0.62rem;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #fff;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+  color: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
   pointer-events: none;
-  transition: all 0.3s ease;
+  transition: all 0.35s ease;
 }
 
-.frame-tag-pulse {
-  width: 6px;
-  height: 6px;
+.micro-tag-dot {
+  width: 4px;
+  height: 4px;
   border-radius: 50%;
   background: #d4af37;
-  box-shadow: 0 0 8px #d4af37;
-  animation: tagPulse 1.8s infinite ease-in-out;
-}
-
-@keyframes tagPulse {
-  0%, 100% { transform: scale(1); opacity: 0.95; }
-  50% { transform: scale(1.4); opacity: 0.35; }
+  box-shadow: 0 0 6px #d4af37;
 }
 
 /* Image layer with depth rack-focus transition */
