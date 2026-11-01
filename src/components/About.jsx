@@ -44,7 +44,6 @@ const About = () => {
           >
             {/* Ambient creative background aura behind the frame */}
             <div className={`about-ambient-aura ${currentItem.theme}`}></div>
-            <div className="about-ambient-particles"></div>
 
             <div className="about-image-frame">
               {/* Dainty top-left corner micro-tag */}
@@ -71,7 +70,6 @@ const About = () => {
               <span className="corner-bracket top-left"></span>
               <span className="corner-bracket bottom-right"></span>
             </div>
-            <div className="about-image-accent-secondary"></div>
           </div>
           
           <div className="about-content">

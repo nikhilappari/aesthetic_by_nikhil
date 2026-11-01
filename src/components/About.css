@@ -49,30 +49,6 @@
   );
 }
 
-/* Atmospheric subtle shimmer particles behind the frame */
-.about-ambient-particles {
-  position: absolute;
-  top: -15%;
-  left: -15%;
-  width: 130%;
-  height: 130%;
-  background-image: 
-    radial-gradient(circle at 20% 30%, rgba(212, 175, 55, 0.15) 1px, transparent 1px),
-    radial-gradient(circle at 80% 40%, rgba(255, 255, 255, 0.12) 1.5px, transparent 1.5px),
-    radial-gradient(circle at 40% 70%, rgba(212, 175, 55, 0.12) 1px, transparent 1px);
-  background-size: 80px 80px, 120px 120px, 90px 90px;
-  opacity: 0.6;
-  pointer-events: none;
-  z-index: 0;
-  animation: particlesDrift 20s linear infinite;
-}
-
-@keyframes particlesDrift {
-  0% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
-  100% { transform: translateY(0); }
-}
-
 /* Master canvas frame */
 .about-image-frame {
   position: relative;
@@ -143,7 +119,7 @@
   z-index: 2;
 }
 
-/* Architectural accent frames behind the picture */
+/* Architectural accent frame behind the picture */
 .about-image-accent {
   position: absolute;
   top: 1.6rem;
@@ -192,19 +168,6 @@
   bottom: -3px;
   right: -3px;
   border-width: 0 2px 2px 0;
-}
-
-/* Secondary delicate accent frame for depth */
-.about-image-accent-secondary {
-  position: absolute;
-  bottom: -1.2rem;
-  right: -1.2rem;
-  width: 70%;
-  height: 70%;
-  border: 1px dashed rgba(212, 175, 55, 0.2);
-  z-index: 1;
-  pointer-events: none;
-  border-radius: 4px;
 }
 
 /* Content Area */
