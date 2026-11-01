@@ -52,21 +52,6 @@ const Testimonials = () => {
               {/* Artistic decorative watermark quote in background */}
               <div className="quote-watermark">“</div>
 
-              {/* Top rating & verified badge */}
-              <div className="testimonial-card-header">
-                <div className="testimonial-stars" aria-label="5 out of 5 stars">
-                  {[...Array(t.rating)].map((_, i) => (
-                    <span key={i} className="star-icon">★</span>
-                  ))}
-                </div>
-                {t.verified && (
-                  <span className="verified-badge">
-                    <span className="verified-check">✓</span>
-                    <span>Verified</span>
-                  </span>
-                )}
-              </div>
-
               {/* Review text */}
               <p className="testimonial-text">
                 "{t.text}"
