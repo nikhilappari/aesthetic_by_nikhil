@@ -645,6 +645,29 @@ app.get('/api/artworks', async (req, res) => {
   }
 });
 
+// Toggle Like for an Artwork
+app.post('/api/artworks/:id/like', async (req, res) => {
+  const { id } = req.params;
+  const { action } = req.body; // 'like' or 'unlike'
+  try {
+    const db = await getDb();
+    const artwork = await db.get("SELECT * FROM artworks WHERE id = ?", [id]);
+    if (!artwork) {
+      return res.status(404).json({ message: 'Artwork not found.' });
+    }
+
+    const currentLikes = typeof artwork.likes === 'number' ? artwork.likes : 0;
+    const delta = action === 'unlike' ? -1 : 1;
+    const newLikes = Math.max(0, currentLikes + delta);
+
+    await db.run("UPDATE artworks SET likes = ? WHERE id = ?", [newLikes, id]);
+    return res.json({ success: true, id: artwork.id, likes: newLikes });
+  } catch (err) {
+    console.error('Like artwork error:', err);
+    return res.status(500).json({ message: 'Failed to update like status.' });
+  }
+});
+
 app.post('/api/artworks', authenticateToken, requireAdmin, async (req, res) => {
   const { title, type, category, price, image, description, status, size, orientation } = req.body;
   if (!title || !type || !category || price === undefined || !image) {

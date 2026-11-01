@@ -405,6 +405,7 @@ const AdminDashboard = ({ artworks, setArtworks, transformation, setTransformati
                   <span>Artwork</span>
                   <span>Category</span>
                   <span>Price</span>
+                  <span>Likes</span>
                   <span>Status</span>
                   <span>Actions</span>
                 </div>
@@ -425,6 +426,7 @@ const AdminDashboard = ({ artworks, setArtworks, transformation, setTransformati
                     </div>
                     <span>{item.category}</span>
                     <span>₹{item.price}</span>
+                    <span style={{ color: '#ef4444', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>❤️ {item.likes || 0}</span>
                     <span className={`status-pill ${item.status.toLowerCase()}`}>{item.status}</span>
                     <div className="table-actions">
                       <button className="icon-btn" onClick={() => openEditModal(item)}>✏️</button>

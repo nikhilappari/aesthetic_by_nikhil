@@ -184,7 +184,8 @@ export async function initDb() {
       description TEXT,
       status TEXT NOT NULL DEFAULT 'Published',
       size TEXT DEFAULT 'A4',
-      orientation TEXT DEFAULT 'Vertical'
+      orientation TEXT DEFAULT 'Vertical',
+      likes INTEGER DEFAULT 0
     )
   `);
 
@@ -197,6 +198,12 @@ export async function initDb() {
 
   try {
     await db.exec("ALTER TABLE artworks ADD COLUMN orientation TEXT DEFAULT 'Vertical'");
+  } catch (e) {
+    // Column already exists, safe to ignore
+  }
+
+  try {
+    await db.exec("ALTER TABLE artworks ADD COLUMN likes INTEGER DEFAULT 0");
   } catch (e) {
     // Column already exists, safe to ignore
   }

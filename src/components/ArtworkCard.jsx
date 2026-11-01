@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import LikeButton from './LikeButton';
 import './ArtworkCard.css';
 
 const ArtworkCard = ({ artwork }) => {
@@ -39,6 +40,9 @@ const ArtworkCard = ({ artwork }) => {
         }}
       >
         <div className={`artwork-image-wrapper ${(artwork.orientation || 'Vertical').toLowerCase()}`}>
+          <div className="artwork-card-like-badge">
+            <LikeButton artworkId={artwork.id} initialLikes={artwork.likes} />
+          </div>
           <img src={artwork.image} alt={artwork.title} className="artwork-image" />
         </div>
         <div className="artwork-info">

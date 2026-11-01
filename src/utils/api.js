@@ -201,6 +201,13 @@ export const api = {
     return this.post('/api/auth/verify-reset-code', data);
   },
 
+    /**
+   * Toggle Like for an Artwork
+   */
+  async toggleLikeArtwork(id, action) {
+    return this.post(`/api/artworks/${id}/like`, { action });
+  },
+
   /**
    * Reset password with 6-digit verification code
    */

@@ -610,3 +610,10 @@
     display: none !important;
   }
 }
+
+.masonry-like-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 6;
+}
