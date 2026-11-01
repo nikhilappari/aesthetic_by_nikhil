@@ -1152,6 +1152,66 @@ app.get('/api/admin/users', authenticateToken, requireAdmin, async (req, res) =>
 
 /* ======================================================= */
 
+
+// Diagnostic Email Endpoint to inspect Render SMTP live status
+app.get('/api/diagnostic/email', async (req, res) => {
+  const emailUser = process.env.EMAIL_USER;
+  const emailPass = process.env.EMAIL_PASS || process.env.EMAIL_PASSWORD;
+
+  const status = {
+    hasEmailUser: !!emailUser,
+    emailUserValue: emailUser ? emailUser.trim().replace(/(.{2})(.*)(@.*)/, "$1***$3") : null,
+    hasEmailPass: !!emailPass,
+    emailPassLength: emailPass ? emailPass.replace(/\s+/g, '').length : 0,
+    renderEnv: process.env.RENDER ? true : false,
+    smtpResult: null,
+    error: null
+  };
+
+  if (!emailUser || !emailPass) {
+    status.error = 'EMAIL_USER or EMAIL_PASS environment variable is NOT set in Render!';
+    return res.json(status);
+  }
+
+  try {
+    const transporter = nodemailer.createTransport({
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
+      auth: {
+        user: emailUser.trim(),
+        pass: emailPass.replace(/\s+/g, '')
+      },
+      connectionTimeout: 10000,
+      socketTimeout: 15000
+    });
+
+    await transporter.verify();
+    status.smtpVerify = 'SUCCESS';
+
+    const info = await transporter.sendMail({
+      from: `"Aesthetic by Nikhil" <${emailUser.trim()}>`,
+      to: 'nikhilappari2006@gmail.com',
+      subject: `Test Delivery from Render at ${new Date().toLocaleTimeString('en-IN')}`,
+      text: 'This is a live test from your Render backend to verify email delivery.',
+      html: '<h3>Render Email Test</h3><p>If you see this, email sending from Render is 100% working!</p>'
+    });
+
+    status.smtpResult = {
+      accepted: info.accepted,
+      rejected: info.rejected,
+      response: info.response,
+      messageId: info.messageId
+    };
+    return res.json(status);
+  } catch (err) {
+    console.error('[DIAGNOSTIC ERROR]', err);
+    status.error = err.message;
+    status.errorCode = err.code;
+    return res.status(500).json(status);
+  }
+});
+
 // Start Server
 app.listen(PORT, () => {
   console.log(`Backend Server is running live on http://localhost:${PORT}`);
