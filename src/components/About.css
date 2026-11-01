@@ -78,6 +78,8 @@
   z-index: 2;
   aspect-ratio: 4/5;
   overflow: hidden;
+  isolation: isolate;
+  -webkit-mask-image: -webkit-radial-gradient(white, black);
   box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7),
               0 0 35px -5px rgba(212, 175, 55, 0.18);
   border: 1px solid rgba(212, 175, 55, 0.3);
@@ -122,34 +124,34 @@
 /* Minimalist micro tag at top left corner */
 .about-micro-tag {
   position: absolute;
-  top: 12px;
-  left: 12px;
-  z-index: 10;
+  top: 14px;
+  left: 14px;
+  z-index: 30;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  background: rgba(10, 14, 18, 0.72);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(212, 175, 55, 0.35);
-  padding: 3px 8px;
-  border-radius: 12px;
-  font-size: 0.62rem;
+  gap: 6px;
+  background: rgba(10, 14, 18, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(212, 175, 55, 0.55);
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
   pointer-events: none;
   transition: all 0.35s ease;
 }
 
 .micro-tag-dot {
-  width: 4px;
-  height: 4px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: #d4af37;
-  box-shadow: 0 0 6px #d4af37;
+  box-shadow: 0 0 8px #d4af37;
 }
 
 /* Image layer with depth rack-focus transition */
@@ -159,20 +161,21 @@
   width: 100%;
   height: 100%;
   opacity: 0;
-  transform: scale(1.05);
-  filter: blur(7px) brightness(0.85);
-  transition: opacity 0.6s cubic-bezier(0.25, 1, 0.5, 1),
-              transform 0.75s cubic-bezier(0.25, 1, 0.5, 1),
-              filter 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+  transform: scale(1.04);
+  -webkit-transform: scale(1.04);
+  transition: opacity 0.65s cubic-bezier(0.25, 1, 0.5, 1),
+              transform 0.75s cubic-bezier(0.25, 1, 0.5, 1);
   pointer-events: none;
-  will-change: opacity, transform, filter;
+  will-change: opacity, transform;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
   z-index: 1;
 }
 
 .about-image-layer.active {
   opacity: 1;
   transform: scale(1);
-  filter: blur(0px) brightness(1);
+  -webkit-transform: scale(1);
   pointer-events: auto;
   z-index: 2;
 }
@@ -182,6 +185,8 @@
   height: 100%;
   object-fit: cover;
   display: block;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 /* Subtle cinematic dark vignette */
@@ -429,6 +434,16 @@
 }
 
 @media (max-width: 768px) {
+  .about-micro-tag {
+    top: 10px;
+    left: 10px;
+    padding: 4px 10px;
+    font-size: 0.68rem;
+    background: rgba(10, 14, 18, 0.94);
+    border-color: rgba(212, 175, 55, 0.7);
+    z-index: 35;
+  }
+
   .about-grid {
     grid-template-columns: 1fr;
     gap: 4rem;
