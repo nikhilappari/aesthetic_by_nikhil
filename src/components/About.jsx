@@ -38,13 +38,6 @@ const About = () => {
     return () => clearInterval(interval);
   }, [isPaused]);
 
-  const handleSelect = (idx) => {
-    if (idx !== currentIndex) {
-      setCurrentIndex(idx);
-      setTransitionKey((k) => k + 1);
-    }
-  };
-
   const currentItem = ABOUT_IMAGES[currentIndex];
 
   return (
@@ -78,24 +71,6 @@ const About = () => {
                   <div className="about-vignette-overlay"></div>
                 </div>
               ))}
-
-              <div className="about-image-switcher">
-                {ABOUT_IMAGES.map((img, idx) => (
-                  <button
-                    key={img.label}
-                    type="button"
-                    className={`switcher-pill ${idx === currentIndex ? 'active' : ''}`}
-                    onClick={() => handleSelect(idx)}
-                    aria-label={`Show ${img.label}`}
-                  >
-                    <span className="switcher-dot"></span>
-                    <span className="switcher-text">{img.label}</span>
-                    {idx === currentIndex && !isPaused && (
-                      <span className="switcher-progress-line"></span>
-                    )}
-                  </button>
-                ))}
-              </div>
             </div>
 
             {/* Geometric luxury accent frames behind the picture with gold corner brackets */}
