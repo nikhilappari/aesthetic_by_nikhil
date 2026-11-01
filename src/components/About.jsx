@@ -12,7 +12,7 @@ const ABOUT_IMAGES = [
     src: '/nikhil_portrait.png',
     alt: 'Nikhil Appari - Portrait Artist',
     label: 'The Artist',
-    objectPosition: 'center 40%'
+    objectPosition: 'center 70%'
   }
 ];
 
