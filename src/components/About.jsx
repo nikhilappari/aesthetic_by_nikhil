@@ -6,12 +6,16 @@ const ABOUT_IMAGES = [
     src: '/artist_workspace.png',
     alt: "Nikhil Appari's Masterworks & Studio",
     label: 'Sketches',
+    tag: 'THE ATELIER • 01',
+    theme: 'atelier',
     objectPosition: 'center 43%'
   },
   {
     src: '/nikhil_portrait.png',
     alt: 'Nikhil Appari - Portrait Artist',
     label: 'The Artist',
+    tag: 'NIKHIL APPARI • 02',
+    theme: 'artist',
     objectPosition: 'center center'
   }
 ];
@@ -19,15 +23,29 @@ const ABOUT_IMAGES = [
 const About = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [transitionKey, setTransitionKey] = useState(0);
 
   useEffect(() => {
     if (isPaused) return;
     const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % ABOUT_IMAGES.length);
+      setCurrentIndex((prev) => {
+        const next = (prev + 1) % ABOUT_IMAGES.length;
+        setTransitionKey((k) => k + 1);
+        return next;
+      });
     }, 2000);
 
     return () => clearInterval(interval);
   }, [isPaused]);
+
+  const handleSelect = (idx) => {
+    if (idx !== currentIndex) {
+      setCurrentIndex(idx);
+      setTransitionKey((k) => k + 1);
+    }
+  };
+
+  const currentItem = ABOUT_IMAGES[currentIndex];
 
   return (
     <section className="about-section section-padding" id="about">
@@ -38,15 +56,33 @@ const About = () => {
             onMouseEnter={() => setIsPaused(true)}
             onMouseLeave={() => setIsPaused(false)}
           >
+            {/* Ambient creative background aura behind the frame */}
+            <div className={`about-ambient-aura ${currentItem.theme}`}></div>
+            <div className="about-ambient-particles"></div>
+
             <div className="about-image-frame">
+              {/* Golden gallery sheen sweep across frame on transition */}
+              <div key={transitionKey} className="about-gallery-sheen"></div>
+
+              {/* Minimalist Atelier tag */}
+              <div className="about-frame-tag">
+                <span className="frame-tag-pulse"></span>
+                <span>{currentItem.tag}</span>
+              </div>
+
               {ABOUT_IMAGES.map((img, idx) => (
-                <img
+                <div
                   key={img.src}
-                  src={img.src}
-                  alt={img.alt}
-                  style={{ objectPosition: img.objectPosition }}
-                  className={`about-image ${idx === currentIndex ? 'active' : ''}`}
-                />
+                  className={`about-image-layer ${idx === currentIndex ? 'active' : ''}`}
+                >
+                  <img
+                    src={img.src}
+                    alt={img.alt}
+                    style={{ objectPosition: img.objectPosition }}
+                    className="about-image"
+                  />
+                  <div className="about-vignette-overlay"></div>
+                </div>
               ))}
 
               <div className="about-image-switcher">
@@ -55,16 +91,25 @@ const About = () => {
                     key={img.label}
                     type="button"
                     className={`switcher-pill ${idx === currentIndex ? 'active' : ''}`}
-                    onClick={() => setCurrentIndex(idx)}
+                    onClick={() => handleSelect(idx)}
                     aria-label={`Show ${img.label}`}
                   >
                     <span className="switcher-dot"></span>
-                    <span>{img.label}</span>
+                    <span className="switcher-text">{img.label}</span>
+                    {idx === currentIndex && !isPaused && (
+                      <span className="switcher-progress-line"></span>
+                    )}
                   </button>
                 ))}
               </div>
             </div>
-            <div className="about-image-accent"></div>
+
+            {/* Geometric luxury accent frames behind the picture with gold corner brackets */}
+            <div className={`about-image-accent ${currentItem.theme}`}>
+              <span className="corner-bracket top-left"></span>
+              <span className="corner-bracket bottom-right"></span>
+            </div>
+            <div className="about-image-accent-secondary"></div>
           </div>
           
           <div className="about-content">
