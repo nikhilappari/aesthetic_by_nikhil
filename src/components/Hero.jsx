@@ -9,7 +9,7 @@ const Hero = () => {
 
   useEffect(() => {
     const handleMouseMove = (e) => {
-      if (!bgRef.current) return;
+      if (!bgRef.current || window.innerWidth <= 768) return;
       const { clientX, clientY } = e;
       const moveX = (clientX - window.innerWidth / 2) / 30;
       const moveY = (clientY - window.innerHeight / 2) / 30;
