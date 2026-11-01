@@ -359,30 +359,25 @@ const AuthPage = ({ login, signup, loginWithGoogle, finalizeLogin }) => {
               </form>
             )}
 
-            {/* STEP 2: Verify Code (ONLY Verification Code, NO Password Fields!) */}
+            {/* STEP 2: Verify Code */}
             {forgotStep === 2 && (
               <form onSubmit={handleVerifyResetCode} className="auth-form">
                 <div className="form-group">
                   <label>Verification Code</label>
                   <input 
                     type="text" 
-                    maxLength="10"
+                    maxLength="6"
                     placeholder="••••••"
-                    style={{ textAlign: 'center', fontSize: '1.5rem', letterSpacing: '5px', fontFamily: 'monospace' }}
+                    style={{ textAlign: 'center', fontSize: '1.5rem', letterSpacing: '6px', fontFamily: 'monospace' }}
                     value={forgotOtp}
                     onChange={(e) => setForgotOtp(e.target.value.replace(/\D/g, ''))}
                     required
                     disabled={isSubmitting}
                     autoFocus
                   />
-                  {(forgotTargetUsername === 'aesthetic_by_nikhil' || forgotIdentifier.includes('nikhil')) && (
-                    <small style={{ fontSize: '0.75rem', color: '#d4af37', marginTop: '6px', display: 'block', textAlign: 'center' }}>
-                      🔑 Admin Direct Verification: enter your registered phone number <code>9849117467</code>
-                    </small>
-                  )}
                 </div>
 
-                <button type="submit" className="btn-primary w-full mt-1" disabled={isSubmitting || !forgotOtp.trim()}>
+                <button type="submit" className="btn-primary w-full mt-1" disabled={isSubmitting || forgotOtp.trim().length !== 6}>
                   {isSubmitting ? 'Verifying Code...' : 'Verify Code'}
                 </button>
 
@@ -395,15 +390,15 @@ const AuthPage = ({ login, signup, loginWithGoogle, finalizeLogin }) => {
                   >
                     ← Change Email
                   </button>
-                  <a 
-                    href="https://wa.me/919849117467?text=Hi%20Nikhil!%20I%20requested%20a%20password%20reset%20code%20on%20Aesthetic%20by%20Nikhil."
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button 
+                    type="button" 
                     className="auth-sub-link"
-                    style={{ color: '#22c55e', textDecoration: 'none' }}
+                    style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--accent-gold)' }}
+                    onClick={handleRequestPasswordReset}
+                    disabled={isSubmitting}
                   >
-                    💬 WhatsApp Help
-                  </a>
+                    Resend Code
+                  </button>
                 </div>
               </form>
             )}

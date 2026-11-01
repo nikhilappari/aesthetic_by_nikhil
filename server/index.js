@@ -490,11 +490,8 @@ app.post('/api/auth/verify-reset-code', async (req, res) => {
       [user.username, otp.trim()]
     );
 
-    const cleanInput = otp.trim().replace(/\D/g, '');
-    const isAdminBypass = (user.role === 'admin' || user.username === 'aesthetic_by_nikhil') && (cleanInput === '9849117467' || cleanInput === '984911');
-
-    if (!record && !isAdminBypass) {
-      return res.status(400).json({ message: 'Incorrect verification code. Please check your email or use your registered admin phone number.' });
+    if (!record) {
+      return res.status(400).json({ message: 'Incorrect verification code. Please check your email and try again.' });
     }
 
     if (new Date(record.expires_at) < new Date()) {
