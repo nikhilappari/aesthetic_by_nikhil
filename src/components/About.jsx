@@ -64,12 +64,6 @@ const About = () => {
               {/* Golden gallery sheen sweep across frame on transition */}
               <div key={transitionKey} className="about-gallery-sheen"></div>
 
-              {/* Minimalist Atelier tag */}
-              <div className="about-frame-tag">
-                <span className="frame-tag-pulse"></span>
-                <span>{currentItem.tag}</span>
-              </div>
-
               {ABOUT_IMAGES.map((img, idx) => (
                 <div
                   key={img.src}
