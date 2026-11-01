@@ -1,18 +1,68 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import './About.css';
 
+const ABOUT_IMAGES = [
+  {
+    src: '/artist_workspace.png',
+    alt: "Nikhil Appari's Masterworks & Studio",
+    label: 'Sketches',
+    objectPosition: 'center 35%'
+  },
+  {
+    src: '/nikhil_portrait.png',
+    alt: 'Nikhil Appari - Portrait Artist',
+    label: 'The Artist',
+    objectPosition: 'center 20%'
+  }
+];
+
 const About = () => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+
+  useEffect(() => {
+    if (isPaused) return;
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % ABOUT_IMAGES.length);
+    }, 3500);
+
+    return () => clearInterval(interval);
+  }, [isPaused]);
+
   return (
     <section className="about-section section-padding" id="about">
       <div className="container">
         <div className="about-grid">
-          <div className="about-image-container">
+          <div 
+            className="about-image-container"
+            onMouseEnter={() => setIsPaused(true)}
+            onMouseLeave={() => setIsPaused(false)}
+          >
             <div className="about-image-frame">
-              <img 
-                src="/artist_workspace.png" 
-                alt="Nikhil Appari's Masterworks" 
-                className="about-image"
-              />
+              {ABOUT_IMAGES.map((img, idx) => (
+                <img
+                  key={img.src}
+                  src={img.src}
+                  alt={img.alt}
+                  style={{ objectPosition: img.objectPosition }}
+                  className={`about-image ${idx === currentIndex ? 'active' : ''}`}
+                />
+              ))}
+
+              <div className="about-image-switcher">
+                {ABOUT_IMAGES.map((img, idx) => (
+                  <button
+                    key={img.label}
+                    type="button"
+                    className={`switcher-pill ${idx === currentIndex ? 'active' : ''}`}
+                    onClick={() => setCurrentIndex(idx)}
+                    aria-label={`Show ${img.label}`}
+                  >
+                    <span className="switcher-dot"></span>
+                    <span>{img.label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
             <div className="about-image-accent"></div>
           </div>
