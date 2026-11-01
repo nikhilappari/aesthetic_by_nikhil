@@ -31,7 +31,7 @@ const sendEmail = async ({ to, subject, html, text }) => {
     try {
       const transporter = nodemailer.createTransport({
         service: 'gmail',
-        auth: { user: emailUser, pass: emailPass }
+        auth: { user: emailUser.trim(), pass: emailPass.replace(/\s+/g, '') }
       });
       await transporter.sendMail({
         from: `"Aesthetic by Nikhil" <${emailUser}>`,
