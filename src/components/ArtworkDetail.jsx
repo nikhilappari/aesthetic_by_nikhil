@@ -1,7 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import ImageMagnifier from './ImageMagnifier';
-import LikeButton from './LikeButton';
 import './ArtworkDetail.css';
 
 const ArtworkDetail = ({ artwork, onClose, enableMagnifier = false }) => {
@@ -21,10 +20,7 @@ const ArtworkDetail = ({ artwork, onClose, enableMagnifier = false }) => {
             )}
           </div>
           <div className="detail-info">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <div className="badge">{artwork.type}</div>
-              <LikeButton artworkId={artwork.id} initialLikes={artwork.likes} />
-            </div>
+            <div className="badge" style={{ marginBottom: '1rem' }}>{artwork.type}</div>
             <h2 className="serif">{artwork.title}</h2>
             <p className="category">{artwork.category}</p>
             <p className="description">{artwork.description}</p>

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ArtworkDetail from './ArtworkDetail';
-import LikeButton from './LikeButton';
 import './Gallery.css';
 
 const Gallery = ({ artworks }) => {
@@ -125,10 +124,7 @@ const Gallery = ({ artworks }) => {
                     {/* Right Column: Masterpiece Specs & Narrative */}
                     <div className="spotlight-details">
                       <div className="details-header">
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                          <span className="artwork-meta-tag">{activeArtwork.type} • {activeArtwork.category}</span>
-                          <LikeButton artworkId={activeArtwork.id} initialLikes={activeArtwork.likes} />
-                        </div>
+                        <span className="artwork-meta-tag">{activeArtwork.type} • {activeArtwork.category}</span>
                         <h1 className="artwork-title-large serif">{activeArtwork.title}</h1>
                       </div>
 
@@ -213,9 +209,6 @@ const Gallery = ({ artworks }) => {
                     onClick={() => setSelectedArtwork(art)}
                   >
                     <div className="masonry-image-wrapper">
-                      <div className="masonry-like-badge">
-                        <LikeButton artworkId={art.id} initialLikes={art.likes} />
-                      </div>
                       <img src={art.image} alt={art.title} className="masonry-image" />
                       <div className="masonry-hover-overlay">
                         <div className="hover-content">
