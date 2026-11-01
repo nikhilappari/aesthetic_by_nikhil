@@ -27,7 +27,7 @@ const RevisionPolicy = () => {
           </div>
           
           <div className="policy-image glass">
-            <img src="https://images.unsplash.com/photo-1513364776144-60967b0f800f?auto=format&fit=crop&q=80&w=800" alt="Artist working" />
+            <img src="/artistic_commitment.jpg" alt="Artistic Commitment - Hand-drawn portrait sketch with drawing pencils" />
             <div className="floating-badge">Handmade Authenticity</div>
           </div>
         </div>
