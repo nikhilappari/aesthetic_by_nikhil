@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { api } from '../utils/api';
 import './AuthPage.css';
 
-const AuthPage = ({ login, signup, loginWithGoogle, finalizeLogin }) => {
+const AuthPage = ({ login, signup, loginWithGoogle }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [consentPolicy, setConsentPolicy] = useState(false);
   const [consentMarketing, setConsentMarketing] = useState(false);
@@ -38,7 +38,6 @@ const AuthPage = ({ login, signup, loginWithGoogle, finalizeLogin }) => {
   const googleBtnContainerRef = useRef(null);
 
   const navigate = useNavigate();
-  const location = useLocation();
 
   // Fetch Google Client ID and initialize Google script
   useEffect(() => {
@@ -74,6 +73,33 @@ const AuthPage = ({ login, signup, loginWithGoogle, finalizeLogin }) => {
     fetchClientIdAndSetup();
   }, [googleClientId]);
 
+  const handleGoogleCredentialResponse = useCallback(async (response) => {
+    setError('');
+    setIsSubmitting(true);
+    try {
+      const user = await loginWithGoogle(response.credential);
+      if (user) {
+        api.recordConsent({
+          identifier: user.username || 'google_user',
+          purpose: 'google_oauth_dpdp',
+          consented: true,
+          notice_version: '2026.1-DPDP'
+        });
+        if (user.role === 'admin') {
+          navigate('/admin');
+        } else {
+          navigate('/');
+        }
+      } else {
+        setError('Google Authentication was rejected by the server.');
+      }
+    } catch (err) {
+      setError(err.message || 'Google Authentication failed.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [loginWithGoogle, navigate]);
+
   // Initialize and render Google Sign-In Button on both tabs
   useEffect(() => {
     if (isGoogleScriptLoaded && googleClientId && googleBtnContainerRef.current && !showForgotPassword) {
@@ -105,34 +131,7 @@ const AuthPage = ({ login, signup, loginWithGoogle, finalizeLogin }) => {
         console.error("Google Sign-In button render failed:", err);
       }
     }
-  }, [isLogin, isGoogleScriptLoaded, googleClientId, showForgotPassword]);
-
-  const handleGoogleCredentialResponse = async (response) => {
-    setError('');
-    setIsSubmitting(true);
-    try {
-      const user = await loginWithGoogle(response.credential);
-      if (user) {
-        api.recordConsent({
-          identifier: user.username || 'google_user',
-          purpose: 'google_oauth_dpdp',
-          consented: true,
-          notice_version: '2026.1-DPDP'
-        });
-        if (user.role === 'admin') {
-          navigate('/admin');
-        } else {
-          navigate('/');
-        }
-      } else {
-        setError('Google Authentication was rejected by the server.');
-      }
-    } catch (err) {
-      setError(err.message || 'Google Authentication failed.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  }, [isLogin, isGoogleScriptLoaded, googleClientId, showForgotPassword, handleGoogleCredentialResponse]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });

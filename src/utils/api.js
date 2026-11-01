@@ -36,7 +36,7 @@ export const api = {
       return await handleResponse(res);
     } catch (err) {
       if (err.name === 'AbortError') {
-        throw new Error(`Request timed out for ${url}`);
+        throw new Error(`Request timed out for ${url}`, { cause: err });
       }
       throw err;
     } finally {
@@ -153,7 +153,7 @@ export const api = {
   async recordVisit(data) {
     try {
       return await this.post('/api/analytics/visit', data);
-    } catch (e) {
+    } catch (_e) {
       // Non-fatal analytics ping
       return { success: false };
     }

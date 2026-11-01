@@ -6,7 +6,7 @@ import About from '../components/About';
 import RevisionPolicy from '../components/RevisionPolicy';
 import Testimonials from '../components/Testimonials';
 
-const HomePage = ({ transformation, pricing, addRequest, user }) => {
+const HomePage = ({ transformation }) => {
   const { hash } = useLocation();
 
   useEffect(() => {

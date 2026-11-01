@@ -3,17 +3,19 @@ import { useLocation, Link } from 'react-router-dom';
 import './LegalPage.css';
 
 const LegalPage = ({ initialTab = 'privacy' }) => {
-  const [activeTab, setActiveTab] = useState(initialTab);
   const location = useLocation();
+  const derivedTab = location.pathname.includes('terms')
+    ? 'terms'
+    : location.pathname.includes('shipping')
+    ? 'shipping'
+    : initialTab || 'privacy';
+  const [selectedTab, setSelectedTab] = useState(null);
+  const activeTab = selectedTab || derivedTab;
+
+  const setActiveTab = (tab) => setSelectedTab(tab);
 
   useEffect(() => {
-    if (location.pathname.includes('terms')) {
-      setActiveTab('terms');
-    } else if (location.pathname.includes('shipping')) {
-      setActiveTab('shipping');
-    } else {
-      setActiveTab('privacy');
-    }
+    setSelectedTab(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [location.pathname]);
 

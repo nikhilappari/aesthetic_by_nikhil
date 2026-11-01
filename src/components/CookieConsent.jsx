@@ -29,7 +29,9 @@ const CookieConsent = () => {
         timestamp: new Date().toISOString(),
         version: '2026.1-DPDP'
       }));
-    } catch (e) {}
+    } catch (_e) {
+      // Silently ignore private browsing storage restriction
+    }
     setIsVisible(false);
   };
 
@@ -46,7 +48,9 @@ const CookieConsent = () => {
       localStorage.removeItem('cached_artworks');
       localStorage.removeItem('cached_transformation');
       localStorage.removeItem('cached_pricing');
-    } catch (e) {}
+    } catch (_e) {
+      // Silently ignore private browsing storage restriction
+    }
     setIsVisible(false);
   };
 

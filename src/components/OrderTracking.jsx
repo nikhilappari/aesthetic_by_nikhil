@@ -2,12 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import './OrderTracking.css';
 
 const OrderTracking = ({ request, updateRequest, user }) => {
-  if (!request) return null;
-
-  const { id, status, price, type, date, adminNote, customerApproval } = request;
-  const messagesList = request.messages || [];
   const [typedMessage, setTypedMessage] = useState('');
   const chatMessagesRef = useRef(null);
+  const messagesList = request?.messages || [];
 
   useEffect(() => {
     if (chatMessagesRef.current) {
@@ -17,6 +14,10 @@ const OrderTracking = ({ request, updateRequest, user }) => {
       }, 50);
     }
   }, [messagesList]);
+
+  if (!request) return null;
+
+  const { id, status, price, type, date, adminNote, customerApproval } = request;
 
   const handleSendMessage = (e) => {
     e.preventDefault();

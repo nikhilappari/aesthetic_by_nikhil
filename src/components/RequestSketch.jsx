@@ -51,7 +51,7 @@ const RequestSketch = ({ pricing, addRequest, user }) => {
   const [estimatedPrice, setEstimatedPrice] = useState(0);
 
   const calculatePrice = () => {
-    let base = 0;
+    let base;
     const { style, type, size, frame } = formData;
 
     // Use dynamic pricing if available, else use defaults

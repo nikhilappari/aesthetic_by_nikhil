@@ -125,7 +125,7 @@ function App() {
 
         sessionStorage.setItem('aesthetic_visit_tracked', 'true');
       }
-    } catch (e) {
+    } catch (_e) {
       // Non-fatal analytics logging
     }
   }, []);
@@ -216,23 +216,24 @@ function App() {
 
   // Sync clientRequests and set up polling when currentUser changes
   useEffect(() => {
-    if (currentUser) {
-      // Fetch immediately
+    if (!currentUser) return;
+
+    // Fetch immediately
+    api.get('/api/requests')
+      .then(data => setClientRequests(data))
+      .catch(err => console.error("Failed to fetch requests:", err));
+
+    // Setup polling every 5 seconds for real-time messages
+    const interval = setInterval(() => {
       api.get('/api/requests')
         .then(data => setClientRequests(data))
         .catch(err => console.error("Failed to fetch requests:", err));
+    }, 5000);
 
-      // Setup polling every 5 seconds for real-time messages
-      const interval = setInterval(() => {
-        api.get('/api/requests')
-          .then(data => setClientRequests(data))
-          .catch(err => console.error("Failed to fetch requests:", err));
-      }, 5000);
-
-      return () => clearInterval(interval);
-    } else {
+    return () => {
+      clearInterval(interval);
       setClientRequests([]);
-    }
+    };
   }, [currentUser]);
 
   // Intercept setter for artworks to trigger backend calls

@@ -3,7 +3,7 @@ import './AdminDashboard.css';
 import { uploadToCloudinary } from '../utils/cloudinary';
 import { api } from '../utils/api';
 
-const AdminDashboard = ({ artworks, setArtworks, transformation, setTransformation, saveTransformation, pricing, setPricing, savePricing, clientRequests = [], updateRequest, reloadRequests, user }) => {
+const AdminDashboard = ({ artworks, setArtworks, _transformation, setTransformation, _saveTransformation, pricing, setPricing, savePricing, clientRequests = [], updateRequest, reloadRequests, user }) => {
   const [activeTab, setActiveTab] = useState('overview');
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
