@@ -22,25 +22,39 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || 'art_website_secret_2026_key';
 
-// Transporter for Sending OTP & Security Notifications
-const sendEmail = async ({ to, subject, html, text }) => {
+// Transporter for Sending OTP & Security Notifications (Pooled persistent connection)
+let mailTransporter = null;
+const getMailTransporter = () => {
   const emailUser = process.env.EMAIL_USER;
   const emailPass = process.env.EMAIL_PASS || process.env.EMAIL_PASSWORD;
+  if (!emailUser || !emailPass) return null;
 
-  if (emailUser && emailPass) {
+  if (!mailTransporter) {
+    mailTransporter = nodemailer.createTransport({
+      pool: true,
+      maxConnections: 3,
+      maxMessages: 100,
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
+      auth: { 
+        user: emailUser.trim(), 
+        pass: emailPass.replace(/\s+/g, '') 
+      },
+      connectionTimeout: 8000,
+      greetingTimeout: 8000,
+      socketTimeout: 10000
+    });
+  }
+  return mailTransporter;
+};
+
+const sendEmail = async ({ to, subject, html, text }) => {
+  const transporter = getMailTransporter();
+  const emailUser = process.env.EMAIL_USER;
+
+  if (transporter && emailUser) {
     try {
-      const transporter = nodemailer.createTransport({
-        host: 'smtp.gmail.com',
-        port: 465,
-        secure: true,
-        auth: { 
-          user: emailUser.trim(), 
-          pass: emailPass.replace(/\s+/g, '') 
-        },
-        connectionTimeout: 10000,
-        greetingTimeout: 10000,
-        socketTimeout: 15000
-      });
       await transporter.sendMail({
         from: `"Aesthetic by Nikhil" <${emailUser.trim()}>`,
         to,
@@ -52,6 +66,7 @@ const sendEmail = async ({ to, subject, html, text }) => {
       return { sent: true };
     } catch (err) {
       console.error('[EMAIL ERROR] Failed to send via SMTP:', err.message);
+      mailTransporter = null; // Reset on failure
       return { sent: false, error: err.message };
     }
   } else {
@@ -366,7 +381,8 @@ app.post('/api/auth/forgot-password', async (req, res) => {
       });
     }
 
-    await sendEmail({
+    // Fire email immediately through warm pooled connection
+    sendEmail({
       to: targetEmail,
       subject: `Your Password Reset Code: ${resetOtp} • Aesthetic by Nikhil`,
       text: `Your password reset code is ${resetOtp}. It expires in 15 minutes.`,
@@ -382,15 +398,16 @@ app.post('/api/auth/forgot-password', async (req, res) => {
           <p style="font-size: 13px; color: #94a3b8; line-height: 1.5;">Enter this 6-digit code on the reset screen to create a new password. If you didn't request this, you can safely ignore this email.</p>
         </div>
       `
-    });
+    }).catch(err => console.error('[ASYNC SEND EMAIL ERROR]', err));
 
     console.log(`[PASSWORD RESET CODE] For ${user.username}: ${resetOtp} -> ${targetEmail}`);
 
+    // Respond immediately so user interface switches to Step 2 in under 100ms
     return res.json({
       success: true,
       username: user.username,
       message: `Reset verification code has been dispatched to ${targetEmail}.`,
-      emailHint: targetEmail.replace(/(.{2})(.*)(@.*)/, "$1***$3"),
+      emailHint: targetEmail.replace(/(.{2})(.*)(@.*)/, "$1***$3")
     });
   } catch (error) {
     console.error('Forgot password error:', error);

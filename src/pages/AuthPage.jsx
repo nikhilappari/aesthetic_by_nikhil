@@ -321,18 +321,22 @@ const AuthPage = ({ login, signup, loginWithGoogle, finalizeLogin }) => {
            =================================================================== */}
         {showForgotPassword ? (
           <div className="forgot-password-card module-fade-in">
-            <h2 className="serif auth-title">Reset Password</h2>
+            <h2 className="serif auth-title">
+              {forgotStep === 1 && 'Reset Password'}
+              {forgotStep === 2 && 'Verify Code'}
+              {forgotStep === 3 && 'Change Password'}
+            </h2>
             <p className="auth-subtitle">
-              {forgotStep === 1 
-                ? 'Enter your registered username or email to receive a 6-digit reset code.' 
-                : `Enter the 6-digit code sent to ${forgotEmailHint} and pick a new password.`}
+              {forgotStep === 1 && 'Enter your registered username or email to receive a 6-digit verification code.'}
+              {forgotStep === 2 && `Enter the 6-digit code sent to ${forgotEmailHint}.`}
+              {forgotStep === 3 && `Code verified! Choose a new password for ${forgotTargetUsername}.`}
             </p>
 
             {forgotError && <p className="auth-error">{forgotError}</p>}
             {forgotSuccess && <p className="auth-success-alert">{forgotSuccess}</p>}
-            
 
-            {forgotStep === 1 ? (
+            {/* STEP 1: Request Code */}
+            {forgotStep === 1 && (
               <form onSubmit={handleRequestPasswordReset} className="auth-form">
                 <div className="form-group">
                   <label>Registered Username or Email</label>
@@ -350,25 +354,62 @@ const AuthPage = ({ login, signup, loginWithGoogle, finalizeLogin }) => {
                 </div>
 
                 <button type="submit" className="btn-primary w-full mt-1" disabled={isSubmitting}>
-                  {isSubmitting ? 'Dispatching Reset Code...' : 'Send 6-Digit Reset Code'}
+                  {isSubmitting ? 'Sending Code...' : 'Send 6-Digit Code'}
                 </button>
               </form>
-            ) : (
-              <form onSubmit={handleExecutePasswordReset} className="auth-form">
+            )}
+
+            {/* STEP 2: Verify Code (ONLY 6-Digit Code, NO Password Fields!) */}
+            {forgotStep === 2 && (
+              <form onSubmit={handleVerifyResetCode} className="auth-form">
                 <div className="form-group">
-                  <label>6-Digit Reset Code</label>
+                  <label>6-Digit Verification Code</label>
                   <input 
                     type="text" 
                     maxLength="6"
                     placeholder="••••••"
-                    style={{ textAlign: 'center', fontSize: '1.4rem', letterSpacing: '6px', fontFamily: 'monospace' }}
+                    style={{ textAlign: 'center', fontSize: '1.5rem', letterSpacing: '6px', fontFamily: 'monospace' }}
                     value={forgotOtp}
                     onChange={(e) => setForgotOtp(e.target.value.replace(/\D/g, ''))}
                     required
                     disabled={isSubmitting}
+                    autoFocus
                   />
                 </div>
 
+                <button type="submit" className="btn-primary w-full mt-1" disabled={isSubmitting || forgotOtp.trim().length !== 6}>
+                  {isSubmitting ? 'Verifying Code...' : 'Verify Code'}
+                </button>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.2rem', fontSize: '0.85rem' }}>
+                  <button 
+                    type="button" 
+                    className="auth-sub-link"
+                    style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: '#94a3b8' }}
+                    onClick={() => { setForgotStep(1); setForgotError(''); setForgotSuccess(''); }}
+                  >
+                    ← Change Email
+                  </button>
+                  <button 
+                    type="button" 
+                    className="auth-sub-link"
+                    style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--accent-gold)' }}
+                    onClick={handleRequestPasswordReset}
+                    disabled={isSubmitting}
+                  >
+                    Resend Code
+                  </button>
+                </div>
+
+                <div style={{ marginTop: '1.2rem', padding: '10px 14px', borderRadius: '8px', background: 'rgba(212, 175, 55, 0.08)', border: '1px solid rgba(212, 175, 55, 0.2)', fontSize: '0.78rem', color: '#cbd5e1', lineHeight: '1.45' }}>
+                  ✉️ <strong>Tip:</strong> Please check your Gmail <strong>Updates</strong> or <strong>Spam</strong> folder, or search <code>Password Reset Code</code> in Gmail.
+                </div>
+              </form>
+            )}
+
+            {/* STEP 3: Change Password (ONLY appears AFTER verifying the code!) */}
+            {forgotStep === 3 && (
+              <form onSubmit={handleExecutePasswordReset} className="auth-form">
                 <div className="form-group">
                   <label>New Password (min 6 characters)</label>
                   <input 
@@ -378,6 +419,7 @@ const AuthPage = ({ login, signup, loginWithGoogle, finalizeLogin }) => {
                     placeholder="••••••••"
                     required
                     disabled={isSubmitting}
+                    autoFocus
                   />
                 </div>
 
@@ -394,7 +436,7 @@ const AuthPage = ({ login, signup, loginWithGoogle, finalizeLogin }) => {
                 </div>
 
                 <button type="submit" className="btn-primary w-full mt-1" disabled={isSubmitting}>
-                  {isSubmitting ? 'Updating Password...' : 'Reset Password & Proceed'}
+                  {isSubmitting ? 'Updating Password...' : 'Change Password'}
                 </button>
               </form>
             )}
