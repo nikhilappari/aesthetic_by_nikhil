@@ -1,57 +1,285 @@
-.text-center {
-  text-align: center;
-  margin-bottom: 4rem;
+.testimonials-section {
+  position: relative;
+  background-color: var(--bg-primary);
+  overflow: hidden;
 }
 
+.testimonials-header {
+  max-width: 650px;
+  margin: 0 auto 4rem auto;
+  text-align: center;
+}
+
+.testimonials-header .section-eyebrow {
+  display: inline-block;
+  color: var(--accent-gold, #d4af37);
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  margin-bottom: 0.8rem;
+}
+
+.testimonials-header .section-title {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  line-height: 1.15;
+}
+
+.testimonials-subtitle {
+  color: var(--text-secondary);
+  font-size: 1.05rem;
+  line-height: 1.7;
+}
+
+/* Grid Layout */
 .testimonials-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 2rem;
+  margin-bottom: 4rem;
 }
 
+/* Luxury Obsidian Card */
 .testimonial-card {
-  padding: 3rem 2rem;
+  position: relative;
+  background: linear-gradient(155deg, rgba(16, 22, 28, 0.75) 0%, rgba(9, 13, 17, 0.88) 100%);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: 8px;
+  padding: 2.4rem 2rem;
   display: flex;
   flex-direction: column;
-  position: relative;
+  overflow: hidden;
+  box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.6),
+              0 0 20px -5px rgba(212, 175, 55, 0.05);
+  transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-.quote-icon {
+.testimonial-card:hover {
+  transform: translateY(-8px);
+  border-color: rgba(212, 175, 55, 0.55);
+  box-shadow: 0 25px 50px -10px rgba(0, 0, 0, 0.75),
+              0 0 30px rgba(212, 175, 55, 0.2);
+}
+
+/* Background watermark quote */
+.quote-watermark {
+  position: absolute;
+  top: 15px;
+  right: 20px;
   font-family: var(--font-serif);
-  font-size: 5rem;
-  color: var(--accent-gold);
+  font-size: 6rem;
+  color: var(--accent-gold, #d4af37);
   line-height: 1;
-  opacity: 0.3;
-  margin-bottom: -1rem;
+  opacity: 0.08;
+  pointer-events: none;
+  user-select: none;
+  transition: opacity 0.3s ease;
 }
 
+.testimonial-card:hover .quote-watermark {
+  opacity: 0.14;
+}
+
+/* Header: Stars & Verified Badge */
+.testimonial-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.4rem;
+  z-index: 2;
+}
+
+.testimonial-stars {
+  display: flex;
+  gap: 3px;
+}
+
+.star-icon {
+  color: var(--accent-gold, #d4af37);
+  font-size: 1rem;
+  filter: drop-shadow(0 0 3px rgba(212, 175, 55, 0.4));
+}
+
+.verified-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(212, 175, 55, 0.12);
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  color: var(--accent-gold, #d4af37);
+  font-size: 0.68rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 12px;
+}
+
+.verified-check {
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+/* Review text */
 .testimonial-text {
-  font-size: 1.1rem;
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
   font-style: italic;
-  color: var(--text-secondary);
-  margin-bottom: 2rem;
+  line-height: 1.75;
+  color: rgba(240, 247, 247, 0.9);
+  margin-bottom: 1.5rem;
   flex-grow: 1;
+  z-index: 2;
 }
 
+/* Medium tag pill */
+.testimonial-medium-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
+  margin-bottom: 1.6rem;
+  z-index: 2;
+}
+
+.medium-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent-gold, #d4af37);
+}
+
+/* Footer: Monogram Avatar & Collector info */
 .testimonial-footer {
   display: flex;
   align-items: center;
+  gap: 1rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  z-index: 2;
+}
+
+.collector-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.25), rgba(16, 22, 28, 0.9));
+  border: 1px solid rgba(212, 175, 55, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 0.95rem;
+  letter-spacing: 0.05em;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  flex-shrink: 0;
+}
+
+.testimonial-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .testimonial-name {
-  font-size: 1rem;
+  font-size: 1.02rem;
   font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: 0.02em;
 }
 
 .testimonial-occasion {
-  font-size: 0.8rem;
-  color: var(--accent-gold);
+  font-size: 0.75rem;
+  color: var(--accent-gold, #d4af37);
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 1.5px;
+  font-weight: 500;
 }
 
+/* Trust Metrics Bar */
+.testimonials-trust-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3.5rem;
+  background: rgba(13, 18, 24, 0.65);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: 12px;
+  padding: 1.5rem 2.5rem;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.trust-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.trust-number {
+  font-family: var(--font-serif);
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: var(--accent-gold, #d4af37);
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+}
+
+.trust-label {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.trust-divider {
+  width: 1px;
+  height: 38px;
+  background: rgba(212, 175, 55, 0.2);
+}
+
+/* Responsive */
 @media (max-width: 1024px) {
   .testimonials-grid {
     grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+  
+  .testimonials-trust-bar {
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 2rem 1.5rem;
+  }
+  
+  .trust-divider {
+    width: 60px;
+    height: 1px;
+  }
+}
+
+@media (max-width: 768px) {
+  .testimonials-header .section-title {
+    font-size: 2.3rem;
+  }
+  
+  .testimonial-card {
+    padding: 2rem 1.5rem;
   }
 }
