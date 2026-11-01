@@ -12,7 +12,7 @@ const ABOUT_IMAGES = [
     src: '/nikhil_portrait.png',
     alt: 'Nikhil Appari - Portrait Artist',
     label: 'The Artist',
-    objectPosition: 'center 20%'
+    objectPosition: 'center 40%'
   }
 ];
 
@@ -24,7 +24,7 @@ const About = () => {
     if (isPaused) return;
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % ABOUT_IMAGES.length);
-    }, 3500);
+    }, 2000);
 
     return () => clearInterval(interval);
   }, [isPaused]);
