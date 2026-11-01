@@ -23,6 +23,7 @@ const AuthPage = ({ login, signup, loginWithGoogle, finalizeLogin }) => {
   const [forgotStep, setForgotStep] = useState(1); // 1 = Request Code, 2 = Enter Code & New Password
   const [forgotIdentifier, setForgotIdentifier] = useState('');
   const [forgotTargetUsername, setForgotTargetUsername] = useState('');
+  const [forgotResetToken, setForgotResetToken] = useState('');
   const [forgotOtp, setForgotOtp] = useState('');
   const [forgotNewPassword, setForgotNewPassword] = useState('');
   const [forgotConfirmPassword, setForgotConfirmPassword] = useState('');
@@ -234,8 +235,8 @@ const AuthPage = ({ login, signup, loginWithGoogle, finalizeLogin }) => {
     }
   };
 
-  // Forgot Password: Step 2 Reset Password
-  const handleExecutePasswordReset = async (e) => {
+    // Forgot Password: Step 2 Verify Code
+  const handleVerifyResetCode = async (e) => {
     e.preventDefault();
     setForgotError('');
     setForgotSuccess('');
@@ -244,6 +245,33 @@ const AuthPage = ({ login, signup, loginWithGoogle, finalizeLogin }) => {
       setForgotError('Please enter the 6-digit verification code.');
       return;
     }
+
+    setIsSubmitting(true);
+    try {
+      const res = await api.verifyResetCode({
+        username: forgotTargetUsername,
+        otp: forgotOtp.trim()
+      });
+
+      if (res?.success) {
+        setForgotResetToken(res.resetToken);
+        setForgotStep(3);
+        setForgotSuccess('Code verified successfully! Please enter your new password below.');
+      } else {
+        setForgotError(res?.message || 'Invalid verification code.');
+      }
+    } catch (err) {
+      setForgotError(err.message || 'Invalid verification code.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Forgot Password: Step 3 Set New Password
+  const handleExecutePasswordReset = async (e) => {
+    e.preventDefault();
+    setForgotError('');
+    setForgotSuccess('');
 
     if (forgotNewPassword.length < 6) {
       setForgotError('New password must be at least 6 characters long.');
@@ -259,6 +287,7 @@ const AuthPage = ({ login, signup, loginWithGoogle, finalizeLogin }) => {
     try {
       const res = await api.resetPassword({
         username: forgotTargetUsername,
+        resetToken: forgotResetToken,
         otp: forgotOtp.trim(),
         newPassword: forgotNewPassword
       });
@@ -267,13 +296,13 @@ const AuthPage = ({ login, signup, loginWithGoogle, finalizeLogin }) => {
         setShowForgotPassword(false);
         setIsLogin(true);
         setFormData(prev => ({ ...prev, username: forgotTargetUsername, password: '' }));
-        setSuccessMessage('Password reset successfully! Please log in with your new password.');
+        setSuccessMessage('Password updated successfully! Please log in with your new password.');
         setError('');
       } else {
-        setForgotError(res?.message || 'Password reset failed.');
+        setForgotError(res?.message || 'Password update failed.');
       }
     } catch (err) {
-      setForgotError(err.message || 'Password reset failed.');
+      setForgotError(err.message || 'Password update failed.');
     } finally {
       setIsSubmitting(false);
     }

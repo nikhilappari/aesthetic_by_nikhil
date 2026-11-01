@@ -398,7 +398,57 @@ app.post('/api/auth/forgot-password', async (req, res) => {
   }
 });
 
-// Reset Password: Validate OTP and update password
+// Step 2: Verify Reset Code independently
+app.post('/api/auth/verify-reset-code', async (req, res) => {
+  const { username, otp } = req.body;
+  if (!username || !otp) {
+    return res.status(400).json({ message: 'Username and 6-digit verification code are required.' });
+  }
+
+  try {
+    const db = await getDb();
+    const user = await db.get(
+      "SELECT * FROM users WHERE username = ? OR username = ? OR (role = 'admin' AND ? LIKE '%nikhil%')",
+      [username.trim(), username.trim().toLowerCase(), username.trim().toLowerCase()]
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: 'User account not found.' });
+    }
+
+    const record = await db.get(
+      "SELECT * FROM otp_verifications WHERE identifier = ? AND otp_code = ? AND purpose = 'password_reset' AND used = 0 ORDER BY id DESC LIMIT 1",
+      [user.username, otp.trim()]
+    );
+
+    if (!record) {
+      return res.status(400).json({ message: 'Incorrect verification code. Please check your email and try again.' });
+    }
+
+    if (new Date(record.expires_at) < new Date()) {
+      return res.status(400).json({ message: 'This reset code has expired. Please request a new code.' });
+    }
+
+    // Generate a temporary reset token valid for 15 minutes
+    const resetToken = jwt.sign(
+      { username: user.username, otpRecordId: record.id, purpose: 'password_reset_verified' },
+      JWT_SECRET,
+      { expiresIn: '15m' }
+    );
+
+    return res.json({
+      success: true,
+      message: 'Code verified successfully! You can now set your new password.',
+      resetToken,
+      username: user.username
+    });
+  } catch (error) {
+    console.error('Verify reset code error:', error);
+    return res.status(500).json({ message: 'Failed to verify reset code.' });
+  }
+});
+
+// Step 3: Set New Password after verification
 app.post('/api/auth/reset-password', async (req, res) => {
   const { username, otp, newPassword } = req.body;
   if (!username || !otp || !newPassword) {

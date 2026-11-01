@@ -194,6 +194,13 @@ export const api = {
     return this.post('/api/auth/forgot-password', data);
   },
 
+    /**
+   * Verify 6-digit Password Reset code (Step 2)
+   */
+  async verifyResetCode(data) {
+    return this.post('/api/auth/verify-reset-code', data);
+  },
+
   /**
    * Reset password with 6-digit verification code
    */
