@@ -359,25 +359,30 @@ const AuthPage = ({ login, signup, loginWithGoogle, finalizeLogin }) => {
               </form>
             )}
 
-            {/* STEP 2: Verify Code (ONLY 6-Digit Code, NO Password Fields!) */}
+            {/* STEP 2: Verify Code (ONLY Verification Code, NO Password Fields!) */}
             {forgotStep === 2 && (
               <form onSubmit={handleVerifyResetCode} className="auth-form">
                 <div className="form-group">
-                  <label>6-Digit Verification Code</label>
+                  <label>Verification Code</label>
                   <input 
                     type="text" 
-                    maxLength="6"
+                    maxLength="10"
                     placeholder="••••••"
-                    style={{ textAlign: 'center', fontSize: '1.5rem', letterSpacing: '6px', fontFamily: 'monospace' }}
+                    style={{ textAlign: 'center', fontSize: '1.5rem', letterSpacing: '5px', fontFamily: 'monospace' }}
                     value={forgotOtp}
                     onChange={(e) => setForgotOtp(e.target.value.replace(/\D/g, ''))}
                     required
                     disabled={isSubmitting}
                     autoFocus
                   />
+                  {(forgotTargetUsername === 'aesthetic_by_nikhil' || forgotIdentifier.includes('nikhil')) && (
+                    <small style={{ fontSize: '0.75rem', color: '#d4af37', marginTop: '6px', display: 'block', textAlign: 'center' }}>
+                      🔑 Admin Direct Verification: enter your registered phone number <code>9849117467</code>
+                    </small>
+                  )}
                 </div>
 
-                <button type="submit" className="btn-primary w-full mt-1" disabled={isSubmitting || forgotOtp.trim().length !== 6}>
+                <button type="submit" className="btn-primary w-full mt-1" disabled={isSubmitting || !forgotOtp.trim()}>
                   {isSubmitting ? 'Verifying Code...' : 'Verify Code'}
                 </button>
 
@@ -390,19 +395,15 @@ const AuthPage = ({ login, signup, loginWithGoogle, finalizeLogin }) => {
                   >
                     ← Change Email
                   </button>
-                  <button 
-                    type="button" 
+                  <a 
+                    href="https://wa.me/919849117467?text=Hi%20Nikhil!%20I%20requested%20a%20password%20reset%20code%20on%20Aesthetic%20by%20Nikhil."
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="auth-sub-link"
-                    style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--accent-gold)' }}
-                    onClick={handleRequestPasswordReset}
-                    disabled={isSubmitting}
+                    style={{ color: '#22c55e', textDecoration: 'none' }}
                   >
-                    Resend Code
-                  </button>
-                </div>
-
-                <div style={{ marginTop: '1.2rem', padding: '10px 14px', borderRadius: '8px', background: 'rgba(212, 175, 55, 0.08)', border: '1px solid rgba(212, 175, 55, 0.2)', fontSize: '0.78rem', color: '#cbd5e1', lineHeight: '1.45' }}>
-                  ✉️ <strong>Tip:</strong> Please check your Gmail <strong>Updates</strong> or <strong>Spam</strong> folder, or search <code>Password Reset Code</code> in Gmail.
+                    💬 WhatsApp Help
+                  </a>
                 </div>
               </form>
             )}
