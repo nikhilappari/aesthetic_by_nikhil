@@ -6,7 +6,7 @@ const ABOUT_IMAGES = [
     src: '/artist_workspace.png',
     alt: "Nikhil Appari's Masterworks & Studio",
     label: 'Sketches',
-    objectPosition: 'center 58%'
+    objectPosition: 'center 48%'
   },
   {
     src: '/nikhil_portrait.png',
